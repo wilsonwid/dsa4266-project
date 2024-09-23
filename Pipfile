@@ -16,6 +16,7 @@ nbdime = "*"
 ipykernel = "*"
 seaborn = "*"
 ffmpeg-python = "*"
+opencv-python = "*"
 
 [dev-packages]
 
