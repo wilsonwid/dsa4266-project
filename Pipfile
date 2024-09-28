@@ -17,6 +17,7 @@ ipykernel = "*"
 seaborn = "*"
 ffmpeg-python = "*"
 opencv-python = "*"
+torch = "*"
 
 [dev-packages]
 
