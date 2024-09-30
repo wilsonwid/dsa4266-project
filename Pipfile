@@ -18,6 +18,7 @@ seaborn = "*"
 ffmpeg-python = "*"
 opencv-python = "*"
 torch = "*"
+torchvision = "*"
 
 [dev-packages]
 
