@@ -73,6 +73,7 @@ def process_videos_from_folder(folder_path, output_path="../output/"):
         for f in os.listdir(folder_path)
         if os.path.isfile(os.path.join(folder_path, f)) and f.lower().endswith(".mp4")
     ]
+    os.makedirs(output_path, exist_ok=True)
     for video_name in videos:
         extract_face_from_video(folder_path, video_name, output_path)
 
