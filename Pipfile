@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+tensorflow = "*"
+scikit-learn = "*"
+numpy = "*"
+pandas = "*"
+jupyter-server = "*"
+notebook-shim = "*"
+httpx = "*"
+async-lru = "*"
+nbdime = "*"
+ipykernel = "*"
+seaborn = "*"
+ffmpeg-python = "*"
+opencv-python = "*"
+torch = "*"
+torchvision = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.8"
