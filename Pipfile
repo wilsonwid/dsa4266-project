@@ -19,7 +19,6 @@ ffmpeg-python = "*"
 opencv-python = "*"
 torch = "*"
 torchvision = "*"
-tensorflow-macos = "*"
 
 [dev-packages]
 
