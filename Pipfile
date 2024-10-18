@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-tensorflow = "*"
+tensorflow = {version = "*", markers = "sys_platform == 'linux' or sys_platform == 'win32'"}
 scikit-learn = "*"
 numpy = "*"
 pandas = "*"
@@ -19,6 +19,7 @@ ffmpeg-python = "*"
 opencv-python = "*"
 torch = "*"
 torchvision = "*"
+tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 
 [dev-packages]
 
