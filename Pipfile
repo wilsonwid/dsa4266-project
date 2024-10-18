@@ -22,6 +22,7 @@ torchvision = "*"
 tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 
 [dev-packages]
+tqdm = "*"
 
 [requires]
 python_version = "3.11"

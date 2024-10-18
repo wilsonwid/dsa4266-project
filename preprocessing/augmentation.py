@@ -1,11 +1,8 @@
-import logging
 import os
-import time
 
 import cv2
 import numpy as np
-
-logging.basicConfig(level=logging.INFO)
+from tqdm import tqdm
 
 
 def rotate_frame(frame, angle):
@@ -105,14 +102,11 @@ def augment_videos(input_dir, output_base_dir):
     if not os.path.exists(output_base_dir):
         os.makedirs(output_base_dir)
 
-    for filename in os.listdir(input_dir):
+    for filename in tqdm(sorted(os.listdir(input_dir))):
         if not filename.endswith((".mp4")):
             continue
 
-        start_time = time.time()
         augment_video(input_dir, output_base_dir, filename)
-        end_time = time.time()
-        logging.info(f"{filename} processed in {end_time - start_time} seconds")
 
 
 input_directory = "data/cropped"  # Videos of cropped faces
