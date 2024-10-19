@@ -20,6 +20,7 @@ opencv-python = "*"
 torch = "*"
 torchvision = "*"
 tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
+plotly = "*"
 
 [dev-packages]
 
