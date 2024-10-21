@@ -50,7 +50,7 @@ def transform(input_path, output_path, transformation):
     out.release()
 
 
-def augment_video(input_dir, output_base_dir, filename):
+def augment_video(input_dir, output_dir, filename):
     """Augment the video by applying one random transformation."""
     input_path = os.path.join(input_dir, filename)
 
@@ -67,23 +67,24 @@ def augment_video(input_dir, output_base_dir, filename):
     ]
 
     transformation_fn = random.choice(transformations)
-    output_path = os.path.join(output_base_dir, filename)
+    output_path = os.path.join(output_dir, filename)
     transform(input_path, output_path, transformation_fn)
 
 
-def augment_videos(input_dir, output_base_dir):
+def augment_videos(input_dir, output_dir):
     """Augment videos by applying a random transformation to each one."""
-    if not os.path.exists(output_base_dir):
-        os.makedirs(output_base_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     filenames = sorted(os.listdir(input_dir))
+    random.seed(42)
     for filename in tqdm(filenames):
         if not filename.endswith((".mp4")):
             continue
 
-        augment_video(input_dir, output_base_dir, filename)
+        augment_video(input_dir, output_dir, filename)
 
 
-input_directory = "data/cropped"  # Videos of cropped faces
+input_directory = "data/cropped"
 output_directory = "data/augmented"
 augment_videos(input_directory, output_directory)

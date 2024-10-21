@@ -27,14 +27,12 @@ def move_files(source_dir, test_dir, val_dir, test_ratio=0.2, val_ratio=0.15):
     print(f"Moved {val_count} files to {val_dir}")
 
 
-base_dir = "data/train"
+base_dir = "data"
 categories = ["deepfake", "real"]
-test_base_dir = "data/test"
-val_base_dir = "data/validation"
 
 for category in categories:
-    source_dir = os.path.join(base_dir, category)
-    test_dir = os.path.join(test_base_dir, category)
-    val_dir = os.path.join(val_base_dir, category)
+    source_dir = os.path.join(base_dir, "train", category)
+    test_dir = os.path.join(base_dir, "test", category)
+    val_dir = os.path.join(base_dir, "validation", category)
 
     move_files(source_dir, test_dir, val_dir)

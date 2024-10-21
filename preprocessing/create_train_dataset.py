@@ -4,10 +4,10 @@ import shutil
 
 base_dir = "data"
 train_metadata_path = os.path.join(base_dir, "train_sample_videos", "metadata.json")
-augmented_dir = os.path.join(base_dir, "augmented_resized")
-cropped_dir = os.path.join(base_dir, "cropped_resized")
-deepfake_dir = os.path.join(base_dir, "train/deepfake")
-real_dir = os.path.join(base_dir, "train/real")
+augmented_dir = os.path.join(base_dir, "augmented")
+cropped_dir = os.path.join(base_dir, "cropped")
+deepfake_dir = os.path.join(base_dir, "train", "deepfake")
+real_dir = os.path.join(base_dir, "train", "real")
 
 os.makedirs(deepfake_dir, exist_ok=True)
 os.makedirs(real_dir, exist_ok=True)
