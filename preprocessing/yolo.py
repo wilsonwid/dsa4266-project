@@ -8,7 +8,7 @@ input_path = "../data/train_sample_videos/"
 SCALE = 1.5
 
 
-def extract_face_from_video(folder_path, video_name, output_path="../output/"):
+def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
     # Open the input video
     cap = cv2.VideoCapture(folder_path + video_name)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -68,7 +68,7 @@ def extract_face_from_video(folder_path, video_name, output_path="../output/"):
     out.release()
 
 
-def process_videos_from_folder(folder_path, output_path="../output/"):
+def process_videos_from_folder(folder_path, output_path="../cropped/"):
     videos = [
         f
         for f in os.listdir(folder_path)

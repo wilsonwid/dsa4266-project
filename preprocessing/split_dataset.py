@@ -3,7 +3,9 @@ import random
 import shutil
 
 
-def move_files(source_dir, test_dir, val_dir, test_ratio=0.2, val_ratio=0.15):
+def move_files(
+    source_dir, test_dir, val_dir, test_ratio=0.4, val_ratio=0.3
+):  # Ratios are a bit higher than normal to account for augmentation of train dataset
     files = os.listdir(source_dir)
     random.seed(42)
     random.shuffle(files)

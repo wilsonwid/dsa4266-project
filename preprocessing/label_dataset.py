@@ -4,7 +4,6 @@ import shutil
 
 base_dir = "data"
 train_metadata_path = os.path.join(base_dir, "train_sample_videos", "metadata.json")
-augmented_dir = os.path.join(base_dir, "augmented")
 cropped_dir = os.path.join(base_dir, "cropped")
 deepfake_dir = os.path.join(base_dir, "train", "deepfake")
 real_dir = os.path.join(base_dir, "train", "real")
@@ -32,5 +31,4 @@ def copy_files(src_dir, file_suffix=None):
             print(f"Copied {src_path} to {dest_path}")
 
 
-copy_files(augmented_dir, file_suffix="augmented")
 copy_files(cropped_dir)
