@@ -20,7 +20,8 @@ opencv-python = "*"
 torch = "*"
 torchvision = "*"
 tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
-matplotlib = "*"
+ultralytics = "*"
+scikit-image = "*"
 
 [dev-packages]
 tqdm = "*"
