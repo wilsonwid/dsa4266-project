@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a13d6e628e11ba7bde11e9680bfeaf1bedf9866f322f86114b64d26b6b6a12e9"
+            "sha256": "5d07a930337595887539da2131e21fc259dadc14150b941df11c98287cb6edc8"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -321,7 +321,7 @@
                 "sha256:fe9f97feb71aa9896b81973a7bbada8c49501dc73e58a10fcef6663af95e5079",
                 "sha256:ffc519621dce0c767e96b9c53f09c5d215578e10b02c285809f76509a3931482"
             ],
-            "markers": "python_full_version >= '3.7.0'",
+            "markers": "python_full_version >= '3.7.0' and sys_platform == 'darwin'",
             "version": "==3.4.0"
         },
         "colorama": {
@@ -1431,7 +1431,7 @@
                 "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002",
                 "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"
             ],
-            "markers": "python_version >= '3.8'",
+            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
             "version": "==24.1"
         },
         "pandas": {
@@ -1674,22 +1674,6 @@
             ],
             "version": "==9.0.0"
         },
-        "pyasn1": {
-            "hashes": [
-                "sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629",
-                "sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"
-            ],
-            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
-            "version": "==0.6.1"
-        },
-        "pyasn1-modules": {
-            "hashes": [
-                "sha256:49bfa96b45a292b711e986f222502c1c9a5e1f4e568fc30e2574a6c7d07838fd",
-                "sha256:c28e2dbf9c06ad61c71a075c7e0f9fd0f1b0bb2d2ad4377f240d33ac2ab60a7c"
-            ],
-            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
-            "version": "==0.4.1"
-        },
         "pycparser": {
             "hashes": [
                 "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6",
@@ -1924,7 +1908,7 @@
                 "sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760",
                 "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6"
             ],
-            "markers": "python_version >= '3.8'",
+            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
             "version": "==2.32.3"
         },
         "rfc3339-validator": {
@@ -1945,11 +1929,11 @@
         },
         "rich": {
             "hashes": [
-                "sha256:51a2c62057461aaf7152b4d611168f93a9fc73068f8ded2790f29fe2b5366d0c",
-                "sha256:8c82a3d3f8dcfe9e734771313e606b39d8247bb6b826e196f4914b333b743cf1"
+                "sha256:9836f5096eb2172c9e77df411c1b009bace4193d6a481d534fea75ebba758283",
+                "sha256:bc1e01b899537598cf02579d2b9f4a415104d3fc439313a7a2c165d76557a08e"
             ],
             "markers": "python_full_version >= '3.8.0' and sys_platform == 'darwin'",
-            "version": "==13.9.2"
+            "version": "==13.9.3"
         },
         "rpds-py": {
             "hashes": [
@@ -2059,14 +2043,6 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==0.20.0"
-        },
-        "rsa": {
-            "hashes": [
-                "sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7",
-                "sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21"
-            ],
-            "markers": "python_version >= '3.6' and python_version < '4' and sys_platform == 'darwin'",
-            "version": "==4.9"
         },
         "scikit-image": {
             "hashes": [
@@ -2447,7 +2423,7 @@
                 "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d",
                 "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"
             ],
-            "markers": "python_version >= '3.8'",
+            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
             "version": "==4.12.2"
         },
         "tzdata": {
@@ -2460,12 +2436,12 @@
         },
         "ultralytics": {
             "hashes": [
-                "sha256:27a8ee785f187eafd19361f2a99c4f6bcc51e4d95af651ef93c8eacca1a5132c",
-                "sha256:b8fccf62b6d331f3d33e5e640d333045eddc7cf3f494594580c4c2fb8db14c41"
+                "sha256:33dcf546cfffcbd879e656fb04e974dfe4069b6b0e41898edf47bbe0306b83f4",
+                "sha256:42c400e13e0e6bdbc25b6fb6815463de46ee5ec7e42f3b3dd6f6c305fc224291"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==8.3.19"
+            "version": "==8.3.21"
         },
         "ultralytics-thop": {
             "hashes": [
@@ -2487,7 +2463,7 @@
                 "sha256:ca899ca043dcb1bafa3e262d73aa25c465bfb49e0bd9dd5d59f1d0acba2f8fac",
                 "sha256:e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9"
             ],
-            "markers": "python_version >= '3.8'",
+            "markers": "python_version >= '3.8' and sys_platform == 'darwin'",
             "version": "==2.2.3"
         },
         "wcwidth": {

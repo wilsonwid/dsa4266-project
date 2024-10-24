@@ -22,6 +22,7 @@ torchvision = "*"
 tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 ultralytics = "*"
 scikit-image = "*"
+matplotlib = "*"
 
 [dev-packages]
 tqdm = "*"
