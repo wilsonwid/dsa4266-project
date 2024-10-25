@@ -1,3 +1,4 @@
+import json
 import os
 
 import cv2
@@ -71,6 +72,15 @@ def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
     out.release()
     if double_face_detected and os.path.exists(output_file):
         os.remove(output_file)
+    return not double_face_detected
+
+
+def modify_metadata(folder_path, output_path, file_list):
+    with open(folder_path + "metadata.json", "r") as metadata_file:
+        data = json.load(metadata_file)
+        processed = {file: data[file] for file in file_list}
+    with open(output_path + "metadata.json", "w") as outfile:
+        json.dump(processed, outfile)
 
 
 def process_videos_from_folder(folder_path, output_path="../cropped/"):
@@ -80,8 +90,11 @@ def process_videos_from_folder(folder_path, output_path="../cropped/"):
         if os.path.isfile(os.path.join(folder_path, f)) and f.lower().endswith(".mp4")
     ]
     os.makedirs(output_path, exist_ok=True)
+    file_list = []
     for video_name in videos:
-        extract_face_from_video(folder_path, video_name, output_path)
+        if extract_face_from_video(folder_path, video_name, output_path):
+            file_list.append(video_name)
+    modify_metadata(folder_path, output_path, file_list)
 
 
 process_videos_from_folder(input_path)
