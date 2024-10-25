@@ -17,12 +17,14 @@ def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
 
     # VideoWriter to save the output video with faces
     output_size = (224, 224)  # square output
+    output_file = output_path + video_name
     out = cv2.VideoWriter(
-        output_path + video_name,
+        output_file,
         cv2.VideoWriter_fourcc(*"mp4v"),
         fps,
         output_size,
     )
+    double_face_detected = False
 
     # Process video frames
     while cap.isOpened():
@@ -34,12 +36,10 @@ def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
         results = model(frame)
 
         # Extract the first face detected
-        if len(results[0].boxes) > 0:
+        if len(results[0].boxes) == 1:
             # Get bounding box of the first face detected
             boxes = results[0].boxes
-            pos = list(map(lambda box: box.xyxy[0].tolist()[0], boxes))
-            idx = pos.index(min(pos))
-            box = boxes[idx]
+            box = boxes[0]
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
             # Take 1.5 * area surrounding the face
@@ -63,9 +63,14 @@ def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
 
             # Write the frame with the face to the output video
             out.write(face_frame_resized)
+        else:
+            double_face_detected = True
+            break
 
     cap.release()
     out.release()
+    if double_face_detected and os.path.exists(output_file):
+        os.remove(output_file)
 
 
 def process_videos_from_folder(folder_path, output_path="../cropped/"):
