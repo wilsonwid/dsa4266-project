@@ -8,7 +8,7 @@ input_path = "../data/train_sample_videos/"
 SCALE = 1.5
 
 
-def extract_face_from_video(folder_path, video_name, output_path="../output/"):
+def extract_face_from_video(folder_path, video_name, output_path="../cropped/"):
     # Open the input video
     cap = cv2.VideoCapture(folder_path + video_name)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -16,13 +16,15 @@ def extract_face_from_video(folder_path, video_name, output_path="../output/"):
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     # VideoWriter to save the output video with faces
-    output_size = (frame_height, frame_height)  # square output
+    output_size = (224, 224)  # square output
+    output_file = output_path + video_name
     out = cv2.VideoWriter(
-        output_path + video_name,
+        output_file,
         cv2.VideoWriter_fourcc(*"mp4v"),
         fps,
         output_size,
     )
+    double_face_detected = False
 
     # Process video frames
     while cap.isOpened():
@@ -34,12 +36,10 @@ def extract_face_from_video(folder_path, video_name, output_path="../output/"):
         results = model(frame)
 
         # Extract the first face detected
-        if len(results[0].boxes) > 0:
+        if len(results[0].boxes) == 1:
             # Get bounding box of the first face detected
             boxes = results[0].boxes
-            pos = list(map(lambda box: box.xyxy[0].tolist()[0], boxes))
-            idx = pos.index(min(pos))
-            box = boxes[idx]
+            box = boxes[0]
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
             # Take 1.5 * area surrounding the face
@@ -47,12 +47,13 @@ def extract_face_from_video(folder_path, video_name, output_path="../output/"):
             height = y2 - y1
             x_center = x1 + width / 2
             y_center = y1 + height / 2
-            width *= SCALE
-            height *= SCALE
-            x1 = max(int(x_center - width / 2), 0)
-            x2 = min(int(x_center + width / 2), frame_width)
-            y1 = max(int(y_center - height / 2), 0)
-            y2 = min(int(y_center + height / 2), frame_height)
+
+            side_length = max(width, height) * SCALE
+
+            x1 = max(int(x_center - side_length / 2), 0)
+            y1 = max(int(y_center - side_length / 2), 0)
+            x2 = min(int(x_center + side_length / 2), frame_width)
+            y2 = min(int(y_center + side_length / 2), frame_height)
 
             # Crop the face from the frame
             face_frame = frame[y1:y2, x1:x2]
@@ -62,12 +63,17 @@ def extract_face_from_video(folder_path, video_name, output_path="../output/"):
 
             # Write the frame with the face to the output video
             out.write(face_frame_resized)
+        else:
+            double_face_detected = True
+            break
 
     cap.release()
     out.release()
+    if double_face_detected and os.path.exists(output_file):
+        os.remove(output_file)
 
 
-def process_videos_from_folder(folder_path, output_path="../output/"):
+def process_videos_from_folder(folder_path, output_path="../cropped/"):
     videos = [
         f
         for f in os.listdir(folder_path)
