@@ -1,15 +1,26 @@
-import logging
 import os
-import time
-
+import random
 import cv2
 import numpy as np
 
-logging.basicConfig(level=logging.INFO)
+from tqdm import tqdm
+from ..utils.types import FlipCode
+from typing import Any, Callable, Optional
 
+def rotate_frame(
+        frame: np.ndarray, 
+        angle: float
+    ) -> np.ndarray:
+    """
+    Rotates the given `frame` by the angle `angle`.
 
-def rotate_frame(frame, angle):
-    """Rotate the given frame by the specified angle."""
+    Args:
+        frame (np.ndarray): Original frame to be transformed.
+        angle (float): Angle to rotate the frame by.
+
+    Returns:
+        Rotated array of type `np.ndarray`.
+    """
     height, width = frame.shape[:2]
     center = (width // 2, height // 2)
     matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
@@ -17,17 +28,61 @@ def rotate_frame(frame, angle):
     return rotated
 
 
-def adjust_brightness_contrast(frame, brightness=0, contrast=0):
-    """Adjust the brightness and contrast of a frame."""
+def adjust_brightness_contrast(
+        frame: np.ndarray, 
+        brightness: float = 0.0, 
+        contrast: float = 0.0
+    ) -> np.ndarray:
+    """
+    Adjusts the brightness and contrast of a frame.
+
+    Args:
+        frame (np.ndarray): Original frame to be transformed.
+        brightness (float): Amount to increase the brightness by.
+        contrast (float): Amount fo increase the contrast by.
+
+    Returns:
+        Modified array of type `np.ndarray`.
+    """
     frame = np.clip(frame * (1 + contrast / 100.0) + brightness, 0, 255).astype(
         np.uint8
     )
     return frame
 
 
-def transform(input_path, output_path, transformations):
-    """Apply a list of transformations to the video and save the result."""
+def flip_frame(
+        frame: np.ndarray,
+        flip_code: FlipCode
+    ) -> np.ndarray:
+    """
+    Flips the frame.
 
+    Args:
+        frame (np.ndarray): Original frame to be transformed.
+        flip_code (FlipCode): Flip code; 1 for vertical flip and 0 for horizontal flip.
+    
+    Returns:
+        Flipped frame of type `np.ndarray`.
+    """
+    return cv2.flip(frame, flip_code)
+
+
+def transform(
+        input_path: str,
+        output_path: str,
+        transformation: Callable[[np.ndarray, Optional[Any], Optional[Any]], np.ndarray]
+    ) -> None:
+    """
+    Applies a single random transformation to the video, then saves the result.
+
+    Args:
+        input_path (str): Input path as a string.
+        output_path (str): Output path as a string.
+        transformation (Callable[[np.ndarray], np.ndarray])
+
+    Returns:
+        None
+    """
     cap = cv2.VideoCapture(input_path)
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -41,80 +96,70 @@ def transform(input_path, output_path, transformations):
         if not has_frame:
             break
 
-        for transform in transformations:
-            frame = transform(frame)
-
+        frame = transformation(frame)
         out.write(frame)
 
     cap.release()
     out.release()
 
 
-def augment_video(input_dir, output_base_dir, filename):
-    """Augment the video by applying various transformations."""
+def augment_video(
+        input_dir: str | bytes | os.PathLike,
+        output_dir: str | bytes | os.PathLike, 
+        filename: str
+    ) -> None:
+    """
+    Augments the video by applying one random transformation and saves it.
+
+    Args:
+        input_dir (str | bytes | os.PathLike): Input directory.
+        output_dir (str | bytes | os.PathLike): Output directory.
+        filename (str): File to be augmented.
+
+    Returns:
+        None
+    """
     input_path = os.path.join(input_dir, filename)
-    for angle in [90, 180, 270]:
-        output_dir = os.path.join(output_base_dir, f"rotated_{angle}")
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, filename)
-        transform(input_path, output_path, [lambda frame: rotate_frame(frame, angle)])
 
-    for brightness in [-50, 50]:
-        output_dir = os.path.join(output_base_dir, f"brightness_{brightness}")
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, filename)
-        transform(
-            input_path,
-            output_path,
-            [lambda frame: adjust_brightness_contrast(frame, brightness=brightness)],
-        )
+    transformations = [
+        lambda frame: rotate_frame(frame, 90),
+        lambda frame: rotate_frame(frame, 180),
+        lambda frame: rotate_frame(frame, 270),
+        lambda frame: adjust_brightness_contrast(frame, brightness=-25),
+        lambda frame: adjust_brightness_contrast(frame, brightness=25),
+        lambda frame: adjust_brightness_contrast(frame, contrast=-25),
+        lambda frame: adjust_brightness_contrast(frame, contrast=25),
+        lambda frame: flip_frame(frame, 1),
+        lambda frame: flip_frame(frame, 0),
+    ]
 
-    for contrast in [-50, 50]:
-        output_dir = os.path.join(output_base_dir, f"contrast_{contrast}")
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, filename)
-        transform(
-            input_path,
-            output_path,
-            [lambda frame: adjust_brightness_contrast(frame, contrast=contrast)],
-        )
-
-    for angle in [90, 180, 270]:
-        for brightness in [-50, 50]:
-            for contrast in [-50, 50]:
-                output_dir = os.path.join(
-                    output_base_dir,
-                    f"combo_rot_{angle}_bright_{brightness}_cont_{contrast}",
-                )
-                os.makedirs(output_dir, exist_ok=True)
-                output_path = os.path.join(output_dir, filename)
-                transform(
-                    input_path,
-                    output_path,
-                    [
-                        lambda frame: rotate_frame(frame, angle),
-                        lambda frame: adjust_brightness_contrast(
-                            frame, brightness=brightness, contrast=contrast
-                        ),
-                    ],
-                )
+    transformation_fn = random.choice(transformations)
+    output_path = os.path.join(output_dir, filename[:-4] + "_augmented.mp4")
+    transform(input_path, output_path, transformation_fn)
 
 
-def augment_videos(input_dir, output_base_dir):
-    """Augment videos by applying various transformations."""
-    if not os.path.exists(output_base_dir):
-        os.makedirs(output_base_dir)
+def augment_videos(
+        input_dir: str | bytes | os.PathLike, 
+        output_dir: str | bytes | os.PathLike
+    ) -> None:
+    """
+    Augments videos by applying a random augmentation to each one.
 
-    for filename in os.listdir(input_dir):
+    Args:
+        input_dir (str | bytes | os.PathLike): Input directory containing the original videos.
+        output_dir (str | bytes | os.PathLike): Output directory to save the augmented videos to.
+    
+    Returns:
+        None
+    """
+    filenames = sorted(os.listdir(input_dir))
+    random.seed(42)
+    for filename in tqdm(filenames):
         if not filename.endswith((".mp4")):
             continue
-
-        start_time = time.time()
-        augment_video(input_dir, output_base_dir, filename)
-        end_time = time.time()
-        logging.info(f"{filename} processed in {end_time - start_time} seconds")
+        augment_video(input_dir, output_dir, filename)
 
 
-input_directory = "data/cropped"  # Videos of cropped faces
-output_directory = "data/augmented"
-augment_videos(input_directory, output_directory)
+if __name__ == "__main__":
+    augment_videos("data/train/deepfake", "data/train/deepfake")
+    augment_videos("data/train/real", "data/train/real")
