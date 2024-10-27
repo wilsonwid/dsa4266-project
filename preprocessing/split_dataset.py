@@ -4,8 +4,26 @@ import shutil
 
 
 def move_files(
-    source_dir, test_dir, val_dir, test_ratio=0.4, val_ratio=0.3
-):  # Ratios are a bit higher than normal to account for augmentation of train dataset
+        source_dir: str | bytes | os.PathLike, 
+        test_dir: str | bytes | os.PathLike, 
+        val_dir: str | bytes | os.PathLike, 
+        test_ratio: float = 0.4, 
+        val_ratio: float = 0.3
+    ) -> None:  
+    """
+    Moves some files from the source directory to the test and validation directory.
+
+    Args:
+        source_dir (str | bytes | os.PathLike):
+        test_dir (str | bytes | os.PathLike):
+        val_dir (str | bytes | os.PathLike):
+        test_ratio (float):
+        val_ratio (float): 
+    
+    Returns:
+        None
+    """
+    # Ratios are a bit higher than normal to account for augmentation of train dataset
     files = os.listdir(source_dir)
     random.seed(42)
     random.shuffle(files)
@@ -28,13 +46,13 @@ def move_files(
     print(f"Moved {test_count} files to {test_dir}")
     print(f"Moved {val_count} files to {val_dir}")
 
+if __name__ == "__main__":
+    base_dir = "data"
+    categories = ["deepfake", "real"]
 
-base_dir = "data"
-categories = ["deepfake", "real"]
+    for category in categories:
+        source_dir = os.path.join(base_dir, "train", category)
+        test_dir = os.path.join(base_dir, "test", category)
+        val_dir = os.path.join(base_dir, "validation", category)
 
-for category in categories:
-    source_dir = os.path.join(base_dir, "train", category)
-    test_dir = os.path.join(base_dir, "test", category)
-    val_dir = os.path.join(base_dir, "validation", category)
-
-    move_files(source_dir, test_dir, val_dir)
+        move_files(source_dir, test_dir, val_dir)
