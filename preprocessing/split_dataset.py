@@ -14,11 +14,11 @@ def move_files(
     Moves some files from the source directory to the test and validation directory.
 
     Args:
-        source_dir (str | bytes | os.PathLike):
-        test_dir (str | bytes | os.PathLike):
-        val_dir (str | bytes | os.PathLike):
-        test_ratio (float):
-        val_ratio (float): 
+        source_dir (str | bytes | os.PathLike): Source directory for the videos.
+        test_dir (str | bytes | os.PathLike): Test set directory.
+        val_dir (str | bytes | os.PathLike): Validation set directory.
+        test_ratio (float): Ratio for the test set. Defaults to 0.4.
+        val_ratio (float): Ratio for the validation set. Defaults to 0.3.
     
     Returns:
         None
