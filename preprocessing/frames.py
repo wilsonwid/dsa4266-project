@@ -50,7 +50,8 @@ def extract_and_save_videos(input_dir, output_dir):
         save_frames(frames, video_output_dir)
 
 
-categories = ["train", "test", "validation"]
-for cat in categories:
-    extract_and_save_videos(f"data/{cat}/deepfake", f"data/{cat}_frames/deepfake")
-    extract_and_save_videos(f"data/{cat}/real", f"data/{cat}_frames/real")
+if __name__ == "__main__":
+    categories = ["train", "test", "validation"]
+    for cat in categories:
+        extract_and_save_videos(f"data/{cat}/deepfake", f"data/{cat}_frames/deepfake")
+        extract_and_save_videos(f"data/{cat}/real", f"data/{cat}_frames/real")
