@@ -30,5 +30,5 @@ def copy_files(src_dir, file_suffix=None):
             shutil.copy(src_path, dest_path)
             print(f"Copied {src_path} to {dest_path}")
 
-
-copy_files(cropped_dir)
+if __name__ == "__main__":
+    copy_files(cropped_dir)
