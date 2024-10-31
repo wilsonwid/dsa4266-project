@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from ..utils.types import FlipCode
+from utils.types import FlipCode
 
 
 def rotate_frame(frame: np.ndarray, angle: float) -> np.ndarray:
@@ -102,6 +102,7 @@ def augment_frame(
         None
     """
     input_path = os.path.join(input_dir, filename)
+    os.makedirs(output_dir, exist_ok=True)
 
     transformations = [
         lambda frame: frame,
@@ -137,9 +138,13 @@ def augment_frames(
     filenames = sorted(os.listdir(input_dir))
     random.seed(42)
     for filename in tqdm(filenames):
-        if not filename.endswith((".mp4")):
+        if filename == ".DS_Store":
             continue
-        augment_frame(input_dir, output_dir, filename)
+        video_dir = os.path.join(input_dir, filename)
+        video_output_dir = os.path.join(output_dir, filename)
+        frames = sorted(os.listdir(video_dir))
+        for frame in frames:
+            augment_frame(video_dir, video_output_dir, frame)
 
 
 if __name__ == "__main__":
