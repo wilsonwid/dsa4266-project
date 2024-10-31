@@ -36,10 +36,12 @@ several different models, such as the Recurrent-CNN and the Vision Transformer, 
 # Repository structure
 
 # Team members
+
 In alphabetical order:
+
 1. Au Jun Hui
 1. Nixon Widjaja
-1. Pong Yizhen
+1. Pong Yi Zhen
 1. Sum Hung Yee
-1. Valerie Tan Hui Xuan
+1. Tan Hui Xuan Valerie
 1. Wilson Widyadhana
