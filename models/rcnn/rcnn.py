@@ -69,13 +69,16 @@ class RecurrentConvolutionalLayer(nn.Module):
                 module.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        print(x.size())
+        collect = []
         for i in range(self.steps):
-            if i == 0: z = self.conv(x[:, 0, ...].squeeze(1))
-            else: z = self.conv(x[:, i, ...].squeeze(1)) + self.shortcut(x[:, i-1, ...].squeeze(1))
+            if i == 0: z = self.conv(x[:, :, 0, ...].squeeze(2))
+            else: z = self.conv(x[:, :, i, ...].squeeze(2)) + self.shortcut(x[:, :, i-1, ...].squeeze(2))
 
             z = self.nonlinearity(z)
             z = self.bn[i](z)
-        return z
+            collect.append(z)
+        return torch.stack(collect, dim=2)
 
 class RecurrentConvolutionalNetwork(nn.Module):
     def __init__(
@@ -118,17 +121,17 @@ class RecurrentConvolutionalNetwork(nn.Module):
 
         self.batchnorm_layer = nn.BatchNorm3d(num_features=self.num_kernels)
 
-        self.pooling_layers = [nn.MaxPool3d(
+        self.pooling_layers = nn.ModuleList([nn.MaxPool3d(
             kernel_size=self.kernel_size, 
             stride=self.stride, 
             padding=self.padding
-        ) for _ in range(self.num_recurrent_layers // 2)]
+        ) for _ in range(self.num_recurrent_layers // 2)])
 
-        self.dropout_layers = [nn.Dropout(
+        self.dropout_layers = nn.ModuleList([nn.Dropout(
             p=self.dropout_prob,
-        ) for _ in range(self.num_recurrent_layers // 2)]
+        ) for _ in range(self.num_recurrent_layers // 2)])
 
-        self.recurrent_convolutional_layers = [RecurrentConvolutionalLayer(
+        self.recurrent_convolutional_layers = nn.ModuleList([RecurrentConvolutionalLayer(
             input_dim=self.num_kernels,
             output_dim=self.num_kernels,
             kernel_size=self.kernel_size,
@@ -137,7 +140,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
             bias=self.bias,
             steps=self.steps,
             nonlinearity=self.nonlinearity
-        ) for _ in range(self.num_recurrent_layers)]
+        ) for _ in range(self.num_recurrent_layers)])
 
         self.fc = nn.Linear(
             in_features=self.kernel_size,
@@ -160,7 +163,6 @@ class RecurrentConvolutionalNetwork(nn.Module):
             x = self.recurrent_convolutional_layers[i](x)
             if i != self.num_recurrent_layers - 1:
                 x = self.recurrent_convolutional_layers[i+1](x)
-            x = self.recurrent_convolutional_layers[i+1](x)
             x = self.dropout_layers[i//2](x)
         
         x = nn.functional.max_pool3d(x, kernel_size=self.kernel_size)
