@@ -1,36 +1,15 @@
 import os
-import cv2
-import json
-import pandas as pd
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, TimeDistributed
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
-from keras_tuner.tuners import RandomSearch
-import matplotlib.pyplot as plt
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.models import load_model
-from sklearn.metrics import roc_curve, auc
-from tensorflow.keras.callbacks import CSVLogger
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 # Check GPU
 import tensorflow as tf
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-# Configure TensorFlow to use the GPU
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import roc_curve, auc
+from tensorflow.keras.models import load_model
 
-def create_datasets(base_dir="../data"):
+def create_datasets(base_dir="../../data"):
     # Separate lists for each dataset
     train_data = []
     val_data = []
@@ -81,8 +60,6 @@ def create_datasets(base_dir="../data"):
 
     return train_df, val_df, test_df
 
-train_df, val_df, test_df = create_datasets()
-
 def load_and_preprocess_image(file_path):
     # Load the image from the file path
     image = tf.io.read_file(file_path)
@@ -90,31 +67,6 @@ def load_and_preprocess_image(file_path):
     image = tf.image.resize(image, [224, 224])  # Resize to target size
     image = image / 255.0  # Normalize to [0, 1]
     return image
-
-def create_tf_dataset(df, batch_size=32, shuffle=True):
-    # Create a tf.data.Dataset from the DataFrame
-    file_paths = df['file_path'].values
-    labels = df['label'].values
-
-    # Create the dataset
-    dataset = tf.data.Dataset.from_tensor_slices((file_paths, labels))
-
-    # Map the loading and preprocessing function
-    dataset = dataset.map(
-        lambda file_path, label: (load_and_preprocess_image(file_path), label),
-        num_parallel_calls=tf.data.AUTOTUNE
-    )
-
-    # Shuffle and batch the dataset
-    if shuffle:
-        dataset = dataset.shuffle(buffer_size=1000)
-
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(tf.data.AUTOTUNE)  # Prefetch for performance
-
-    return dataset
-
-best_model_loaded = load_model("best_cnn_model.h5")
 
 def predict_videos(model, test_df, batch_size=64):
     # Dictionary to store video predictions and labels
@@ -200,63 +152,53 @@ def predict_videos(model, test_df, batch_size=64):
 
     return video_classifications, np.array(all_true_labels), np.array(all_predictions)
 
-# Predict on the test set using the predict_videos function
-video_classifications, all_true_labels, all_predictions = predict_videos(best_model_loaded, test_df)  # Adjust the slicing as needed
+if __name__ == '__main__':
+    # Check for GPU, if it exists, configure it
+    print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+    # Configure TensorFlow to use the GPU
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
 
-# Prepare true labels and predicted labels for confusion matrix and classification report
-y_true = []
-y_pred = []  # This will store the mean prediction values for AUC/ROC
-video_names = []
+    # Create the dataset
+    train_df, val_df, test_df = create_datasets()
 
-for video_dir, result in video_classifications.items():
-    video_name = os.path.basename(video_dir)  # Get the last subdirectory (video name)
-    video_names.append(video_name)  # Store video names
-    y_true.append(result['true_label'])
+    # Load the best trained model
+    best_model_loaded = load_model("best_cnn_model.h5")
 
-    # Store the mean prediction value for ROC analysis
-    mean_prediction = result['mean_prediction']
-    y_pred.append(mean_prediction)  # Store the probability
+    # Predict on the test set using the predict_videos function
+    video_classifications, all_true_labels, all_predictions = predict_videos(best_model_loaded, test_df)  # Adjust the slicing as needed
 
-# Compute confusion matrix and display it
-# Apply threshold to create binary predictions for the confusion matrix
-binary_predictions = [1 if pred >= 0.5 else 0 for pred in y_pred]
-cm = confusion_matrix(y_true, binary_predictions)
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Deepfake"])
-disp.plot(cmap=plt.cm.Blues)
-plt.title("Confusion Matrix")
-plt.show()
-os.makedirs('results', exist_ok=True)
-plt.savefig('results/confusion_matrix.png')
+    # Prepare true labels and predicted labels for confusion matrix and classification report
+    y_true = []
+    y_pred = []  # This will store the mean prediction values for AUC/ROC
+    video_names = []
 
-# Print classification report
-print(classification_report(y_true, binary_predictions, target_names=["Real", "Deepfake"]))
+    for video_dir, result in video_classifications.items():
+        video_name = os.path.basename(video_dir)  # Get the last subdirectory (video name)
+        video_names.append(video_name)  # Store video names
+        y_true.append(result['true_label'])
 
-# Create a DataFrame for the results including probability predictions
-results_df = pd.DataFrame({
-    'video_name': video_names,
-    'predicted_probability': y_pred,  # Store the predicted probabilities
-    'actual_label': y_true
-})
+        # Store the mean prediction value for ROC analysis
+        mean_prediction = result['mean_prediction']
+        y_pred.append(mean_prediction)  # Store the probability
 
-# Output the results to a CSV file
-results_df.to_csv('video_classification_results_rd_2.csv', index=False)
+    # Create a DataFrame for the results including probability predictions
+    results_df = pd.DataFrame({
+        'video_name': video_names,
+        'predicted_probability': y_pred,  # Store the predicted probabilities
+        'actual_label': y_true
+    })
 
-print("Results saved to 'video_classification_results_rd_2.csv'.")
+    # Output the results to a CSV file
+    results_df.to_csv('results/video_classification_results.csv', index=False)
 
-# Plot AUC-ROC Curve
-fpr, tpr, thresholds = roc_curve(y_true, y_pred)
-roc_auc = auc(fpr, tpr)
-
-plt.figure()
-plt.plot(fpr, tpr, color='blue', label='ROC curve (area = {:.2f})'.format(roc_auc))
-plt.plot([0, 1], [0, 1], color='red', linestyle='--')  # Diagonal line for random chance
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic (ROC) Curve')
-plt.legend(loc='lower right')
-plt.show()
-
-os.makedirs('results', exist_ok=True)
-plt.savefig('results/auc_roc.png')
+    print("Results saved to 'results/video_classification_results.csv'.")
