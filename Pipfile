@@ -26,6 +26,7 @@ matplotlib = "*"
 
 [dev-packages]
 tqdm = "*"
+torch-tb-profiler = "*"
 
 [requires]
 python_version = "3.11"

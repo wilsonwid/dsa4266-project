@@ -2,27 +2,38 @@ import torch
 import torch.nn as nn
 import datetime as dt
 import argparse
+
 from rcnn import RecurrentConvolutionalNetwork
+from utils.dataset import VideoDataset
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 MODEL_NAME = "rcnn"
 NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime("%Y-%m-%d-%H-%M-%S")}"
-SAVE_DIR = 
+SAVE_DIR = "models/rcnn/saved_models"
+DATA_FOLDER = "data"
+
+timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+writer = SummaryWriter(f"runs/rcnn_{timestamp}")
 
 def train_model(
-    data: torch.Tensor,
+    train_dataloader: torch.utils.data.DataLoader,
+    val_dataloader: torch.utils.data.DataLoader,
     model: nn.Module,
     epochs: int,
-    filename: str
+    filename: str,
+    writer: SummaryWriter
 ):
     """
     Trains the model and saves the weights into a `.pt` file.
 
     Args:
-        data (torch.Tensor): The data to train the model.
-        model (nn.Module): The model to train.
+        train_dataloader (torch.utils.data.DataLoader): Data to train the model on.
+        val_dataloader (torch.utils.data.DataLoader): Data to validate the model on.
+        model (nn.Module): Model to be trained.
         epochs (int): Number of epochs.
         filename (str): Filename to save the model to.
 
@@ -30,25 +41,59 @@ def train_model(
 
     """
     model.to(device)
-    model.train()
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    loss_fn = nn.CrossEntropyLoss()
+
+    running_loss = 0.
+    last_loss = 0.
 
     for epoch in range(epochs):
-        for i in range(100):
-            x = torch.randn(1, 5, 32, 32).to(device)
-            y = torch.randint(0, 2, (1,)).to(device)
+        model.train()
+        for i, data in enumerate(data):
+            inputs, labels = data["data"].to(device), data["target"].to(device)
 
             optimizer.zero_grad()
-            output = model(x)
-            loss = criterion(output, y)
+            output = model(inputs)
+            loss = loss_fn(output, labels)
             loss.backward()
             optimizer.step()
 
-            print(f"Epoch: {epoch}, Loss: {loss.item()}")
+            running_loss += loss.item()
 
-    torch.save(model.state_dict(), f"{MODEL_NAME}_{filename}.pt")
+            if i % 10 == 9:
+                last_loss = running_loss / 10
+                print(f"Batch: {i + 1}, Loss: {last_loss}")
+                tb_x = epoch * len(train_dataloader) + i + 1
+                writer.add_scalar("Loss/train", last_loss, tb_x)
+                running_loss = 0.
+
+        model.eval()
+
+        with torch.no_grad():
+            for i, vdata in enumerate(val_dataloader):
+                inputs, labels = vdata["data"].to(device), vdata["target"].to(device)
+                output = model(inputs)
+                loss = loss_fn(output, labels)
+                running_loss += loss.item()
+
+        avg_vloss = running_loss / (i + 1)
+        print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
+
+        writer.add_scalars("Training vs Validation Loss",
+                           {"Train": last_loss, "Validation": avg_vloss},
+                           epoch + 1)
+        writer.flush()
+
+        if avg_vloss < best_vloss:
+            best_vloss = avg_vloss
+            model_path = f"{SAVE_DIR}/{MODEL_NAME}_{timestamp}_{epoch + 1}.pt"
+
+            torch.save(model.state_dict(), model_path)
+
+
+    torch.save(model.state_dict(), f"{SAVE_DIR}/{MODEL_NAME}_{filename}.pt")
+
 
 
 def get_arguments() -> argparse.Namespace:
@@ -94,8 +139,6 @@ def get_arguments() -> argparse.Namespace:
 
     return parser.parse_args()
     
-
-
 if __name__ == "__main__":
     args = get_arguments()
     model = RecurrentConvolutionalNetwork(
@@ -111,5 +154,18 @@ if __name__ == "__main__":
         steps=args.steps,
         num_classes=args.num_classes
     )
+
+    train_dataset = VideoDataset(root="data/train")
+    train_loader = DataLoader(dataset=train_dataset, batch_size=16, num_workers=8)
+
+    val_dataset = VideoDataset(root="data/val")
+    val_loader = DataLoader(dataset=val_dataset, batch_size=16, num_workers=8)
     
-    train_model(model, args.epochs, args.filename)
+    train_model(
+        dataloader=train_loader, 
+        val_dataloader=val_loader,
+        model=model, 
+        epochs=args.epochs, 
+        filename=args.filename, 
+        writer=writer
+    )
