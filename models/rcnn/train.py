@@ -1,3 +1,8 @@
+# Heavily adapted from https://pytorch.org/tutorials/beginner/introyt/trainingyt.html
+import sys
+import os
+main_folder_path = os.path.dirname(__file__) + "/../../"
+sys.path.append(main_folder_path)
 import torch
 import torch.nn as nn
 import datetime as dt
@@ -5,6 +10,7 @@ import argparse
 
 from rcnn import RecurrentConvolutionalNetwork
 from utils.dataset import VideoDataset
+from utils.utils import convert_str_to_nonlinearity
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -12,7 +18,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 MODEL_NAME = "rcnn"
 NOW = dt.datetime.now()
-FILENAME = f"{NOW.strftime("%Y-%m-%d-%H-%M-%S")}"
+FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
 SAVE_DIR = "models/rcnn/saved_models"
 DATA_FOLDER = "data"
 
@@ -50,8 +56,8 @@ def train_model(
 
     for epoch in range(epochs):
         model.train()
-        for i, data in enumerate(data):
-            inputs, labels = data["data"].to(device), data["target"].to(device)
+        for i, data in enumerate(train_dataloader):
+            inputs, labels = data["video"].to(device), data["target"].to(device)
 
             optimizer.zero_grad()
             output = model(inputs)
@@ -110,7 +116,7 @@ def get_arguments() -> argparse.Namespace:
         prog="train_rcnn",
         description="Trains the RCNN Model"
     )
-    parser.add_argument("--input_dim", type=int, default=5,
+    parser.add_argument("--input_dim", type=int, default=6,
                         help="Input dimension")
     parser.add_argument("--num_rec_layers", type=int, default=5, 
                         help="Number of recurrent layers")
@@ -149,7 +155,7 @@ if __name__ == "__main__":
         stride=args.stride,
         padding=args.padding,
         dropout_prob=args.dropout_prob,
-        nonlinearity=args.nonlinearity,
+        nonlinearity=convert_str_to_nonlinearity(args.nonlinearity),
         bias=args.bias,
         steps=args.steps,
         num_classes=args.num_classes
@@ -158,11 +164,11 @@ if __name__ == "__main__":
     train_dataset = VideoDataset(root="data/train")
     train_loader = DataLoader(dataset=train_dataset, batch_size=16, num_workers=8)
 
-    val_dataset = VideoDataset(root="data/val")
+    val_dataset = VideoDataset(root="data/validation")
     val_loader = DataLoader(dataset=val_dataset, batch_size=16, num_workers=8)
     
     train_model(
-        dataloader=train_loader, 
+        train_dataloader=train_loader, 
         val_dataloader=val_loader,
         model=model, 
         epochs=args.epochs, 

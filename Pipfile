@@ -23,6 +23,7 @@ tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 ultralytics = "*"
 scikit-image = "*"
 matplotlib = "*"
+av = "*"
 
 [dev-packages]
 tqdm = "*"

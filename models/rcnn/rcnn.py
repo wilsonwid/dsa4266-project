@@ -62,21 +62,20 @@ class RecurrentConvolutionalLayer(nn.Module):
         # Initialise the parameters
 
         for module in self.modules():
-            if isinstance(module, nn.Conv2d()):
+            if isinstance(module, nn.Conv2d):
                 nn.init.kaiming_normal_(module.weight)
             elif isinstance(module, nn.BatchNorm2d):
                 module.weight.data.fill_(1)
                 module.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        initial_x = x
         for i in range(self.steps):
-            if i == 0: z = self.conv(x)
-            else: z = self.conv(x) + self.shortcut(initial_x)
+            if i == 0: z = self.conv(x[:, 0, ...].squeeze(1))
+            else: z = self.conv(x[:, i, ...].squeeze(1)) + self.shortcut(x[:, i-1, ...].squeeze(1))
 
-            x = self.nonlinearity(z)
-            x = self.bn[i](x)
-        return x
+            z = self.nonlinearity(z)
+            z = self.bn[i](z)
+        return z
 
 class RecurrentConvolutionalNetwork(nn.Module):
     def __init__(
@@ -84,9 +83,9 @@ class RecurrentConvolutionalNetwork(nn.Module):
             input_channels:  int,
             num_recurent_layers: int,
             num_kernels: int = 96,
-            kernel_size: int | tuple[int, int] = (3, 3),
-            stride: int | tuple[int, int] = (1, 1),
-            padding: int | tuple[int, int] = (1, 1),
+            kernel_size: int | tuple[int, int, int] = 3,
+            stride: int | tuple[int, int, int] = 1,
+            padding: int | tuple[int, int, int] = 1,
             dropout_prob: float = 0.25,
             nonlinearity: NonlinearityEnum = NonlinearityEnum.RELU,
             bias: bool = False,
@@ -106,7 +105,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
         self.steps = steps
         self.num_classes = num_classes
 
-        self.init_conv_layer = nn.Conv2d(
+        self.init_conv_layer = nn.Conv3d(
             in_channels=self.input_channels,
             out_channels=self.num_kernels,
             kernel_size=self.kernel_size,
@@ -117,9 +116,9 @@ class RecurrentConvolutionalNetwork(nn.Module):
 
         self.nonlinearity_layer = select_nonlinearity(self.nonlinearity)
 
-        self.batchnorm_layer = nn.BatchNorm2d(num_features=self.num_kernels)
+        self.batchnorm_layer = nn.BatchNorm3d(num_features=self.num_kernels)
 
-        self.pooling_layers = [nn.MaxPool2d(
+        self.pooling_layers = [nn.MaxPool3d(
             kernel_size=self.kernel_size, 
             stride=self.stride, 
             padding=self.padding
@@ -147,24 +146,24 @@ class RecurrentConvolutionalNetwork(nn.Module):
         )
 
         for module in self.modules():
-            if isinstance(module, nn.Conv2d()):
+            if isinstance(module, nn.Conv3d):
                 nn.init.kaiming_normal_(module.weight)
-            elif isinstance(module, nn.BatchNorm2d):
+            elif isinstance(module, nn.BatchNorm3d):
                 module.weight.data.fill_(1)
                 module.bias.data.zero_()
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.permute(0, 2, 1, 3, 4)
         x = self.init_conv_layer(x)
         x = self.batchnorm_layer(self.nonlinearity_layer(x))
         for i in range(0, self.num_recurrent_layers, 2):
-            x = self.pooling_layers[i//2](x)
             x = self.recurrent_convolutional_layers[i](x)
             if i != self.num_recurrent_layers - 1:
                 x = self.recurrent_convolutional_layers[i+1](x)
             x = self.recurrent_convolutional_layers[i+1](x)
             x = self.dropout_layers[i//2](x)
         
-        x = nn.functional.max_pool2d(x, kernel_size=self.kernel_size)
+        x = nn.functional.max_pool3d(x, kernel_size=self.kernel_size)
         x = x.view(-1, self.num_kernels)
         x = nn.functional.dropout(x, p=self.dropout_prob)
         x = self.fc(x)
