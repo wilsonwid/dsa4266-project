@@ -1,8 +1,12 @@
 import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 from sklearn.metrics import roc_curve, auc
+from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import plot_model
+
 
 def load_results(filepath):
     """Load the results CSV file."""
@@ -43,6 +47,12 @@ def plot_roc_curve(y_true, y_pred_prob, output_path='results/auc_roc.png'):
     plt.savefig(output_path)
     plt.show()
 
+def save_model_diagram(model, output_path='results/model_diagram.png'):
+    """Generate and save the model diagram."""
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plot_model(model, to_file=output_path, show_shapes=True, show_layer_names=True)
+    print("Model diagram saved to", output_path)
+
 if __name__ == '__main__':
     # Load the results CSV file
     results_df = load_results('results/video_classification_results.csv')
@@ -63,3 +73,9 @@ if __name__ == '__main__':
 
     # Plot and save the AUC-ROC curve
     plot_roc_curve(y_true, y_pred_prob)
+
+    # Plot and save model diagram
+    best_model_loaded = load_model("results/best_cnn_model.h5")
+
+    # Save the model diagram
+    save_model_diagram(best_model_loaded)

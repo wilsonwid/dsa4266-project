@@ -172,7 +172,7 @@ if __name__ == '__main__':
     train_df, val_df, test_df = create_datasets()
 
     # Load the best trained model
-    best_model_loaded = load_model("best_cnn_model.h5")
+    best_model_loaded = load_model("results/best_cnn_model.h5")
 
     # Predict on the test set using the predict_videos function
     video_classifications, all_true_labels, all_predictions = predict_videos(best_model_loaded, test_df)  # Adjust the slicing as needed

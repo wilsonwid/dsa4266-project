@@ -25,6 +25,8 @@ scikit-image = "*"
 matplotlib = "*"
 keras-tuner = "*"
 keras = "*"
+pydot = "*"
+graphviz = "*"
 
 [dev-packages]
 tqdm = "*"
