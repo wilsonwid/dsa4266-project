@@ -14,6 +14,7 @@ from utils.utils import convert_str_to_nonlinearity
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from sklearn.metrics import f1_score
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -58,6 +59,7 @@ def train_model(
 
     for epoch in tqdm(range(epochs)):
         model.train()
+        collected_labels, collected_predictions = [], []
         for i, data in tqdm(enumerate(train_dataloader)):
             inputs, labels = data["video"].to(device), data["target"].to(device)
 
@@ -68,27 +70,43 @@ def train_model(
             optimizer.step()
 
             running_loss += loss.item()
+            collected_labels.append(labels.cpu())
+            collected_predictions.append(output.argmax(dim=1).cpu())
 
             if i % 10 == 9:
                 last_loss = running_loss / 10
-                print(f"Batch: {i + 1}, Loss: {last_loss}")
+                epoch_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions))
+                print(f"Batch: {i + 1}, Loss: {last_loss}, F1 score: {epoch_f1}")
                 tb_x = epoch * len(train_dataloader) + i + 1
+
                 writer.add_scalar("Loss/train", last_loss, tb_x)
+                writer.add_scalar("F1 score/train", epoch_f1, tb_x)
+
                 running_loss = 0.
 
         model.eval()
         with torch.no_grad():
+            collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_dataloader):
                 inputs, labels = vdata["data"].to(device), vdata["target"].to(device)
                 output = model(inputs)
                 loss = loss_fn(output, labels)
                 running_loss += loss.item()
 
+                collected_labels.append(labels.cpu())
+                collected_predictions.append(output.argmax(dim=1).cpu())
+            val_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions))
+            print(f"Validation Loss: {loss.item()}, ValidationF1 score: {val_f1}")
+
+
         avg_vloss = running_loss / (i + 1)
         print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
 
         writer.add_scalars("Training vs Validation Loss",
                            {"Train": last_loss, "Validation": avg_vloss},
+                           epoch + 1)
+        writer.add_scalars("Training vs Validation F1 Score",
+                           {"Train": epoch_f1, "Validation": val_f1},
                            epoch + 1)
         writer.flush()
 
@@ -143,6 +161,8 @@ def get_arguments() -> argparse.Namespace:
                         help="Number of epochs")
     parser.add_argument("--filename", type=str, default=FILENAME,
                         help="Filename to save the model")
+    parser.add_argument("--batch_size", type=int, default=8,
+                    help="Batch size for training")
 
     return parser.parse_args()
     
@@ -163,10 +183,10 @@ if __name__ == "__main__":
     )
 
     train_dataset = VideoDataset(root=f"{main_folder_path}/data/train", clip_len=args.steps)
-    train_loader = DataLoader(dataset=train_dataset, batch_size=16, num_workers=8)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=8)
 
     val_dataset = VideoDataset(root=f"{main_folder_path}/data/validation", clip_len=args.steps)
-    val_loader = DataLoader(dataset=val_dataset, batch_size=16, num_workers=8)
+    val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=8)
     
     train_model(
         train_dataloader=train_loader, 

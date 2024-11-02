@@ -4,6 +4,7 @@ from typing import Optional
 from utils.types import NonlinearityEnum
 
 SEED = 42
+INPUT_SHAPE = (224, 224)
 
 def select_nonlinearity(nl_enum: NonlinearityEnum) -> Optional[nn.Module]:
     match nl_enum:

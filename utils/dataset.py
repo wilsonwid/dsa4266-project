@@ -45,6 +45,9 @@ class VideoDataset(torch.utils.data.IterableDataset):
         self.clip_len = clip_len
         self.num_lbp_points = num_lbp_points
         self.lbp_radius = lbp_radius
+    
+    def __len__(self):
+        return len(self.samples)
 
     def __iter__(self):
         worker_info = torch.utils.data.get_worker_info()

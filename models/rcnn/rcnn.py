@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from utils.types import NonlinearityEnum
 from utils.utils import select_nonlinearity
+from utils.utils import INPUT_SHAPE
 
 class RecurrentConvolutionalLayer(nn.Module):
     """
@@ -69,7 +70,6 @@ class RecurrentConvolutionalLayer(nn.Module):
                 module.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        print(x.size())
         collect = []
         for i in range(self.steps):
             if i == 0: z = self.conv(x[:, :, 0, ...].squeeze(2))
@@ -125,11 +125,11 @@ class RecurrentConvolutionalNetwork(nn.Module):
             kernel_size=self.kernel_size, 
             stride=self.stride, 
             padding=self.padding
-        ) for _ in range(self.num_recurrent_layers // 2)])
+        ) for _ in range(self.num_recurrent_layers // 2 + 1)])
 
         self.dropout_layers = nn.ModuleList([nn.Dropout(
             p=self.dropout_prob,
-        ) for _ in range(self.num_recurrent_layers // 2)])
+        ) for _ in range(self.num_recurrent_layers // 2 + 1)])
 
         self.recurrent_convolutional_layers = nn.ModuleList([RecurrentConvolutionalLayer(
             input_dim=self.num_kernels,
@@ -143,7 +143,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
         ) for _ in range(self.num_recurrent_layers)])
 
         self.fc = nn.Linear(
-            in_features=self.kernel_size,
+            in_features=self.num_kernels * 5 * 74 * 74,
             out_features=self.num_classes,
             bias=self.bias
         )
@@ -166,7 +166,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
             x = self.dropout_layers[i//2](x)
         
         x = nn.functional.max_pool3d(x, kernel_size=self.kernel_size)
-        x = x.view(-1, self.num_kernels)
+        x = x.flatten(start_dim=1)
         x = nn.functional.dropout(x, p=self.dropout_prob)
         x = self.fc(x)
         return x
