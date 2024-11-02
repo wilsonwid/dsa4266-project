@@ -3,7 +3,7 @@ import os
 import cv2
 from tqdm import tqdm
 
-# Functions adapted from Junhui's cnn-dev.ipynb
+# Functions adapted from Junhui's cnn_dev.ipynb
 # (Print statements removed to allow tqdm to work)
 
 
