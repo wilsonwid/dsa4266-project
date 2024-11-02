@@ -24,6 +24,7 @@ ultralytics = "*"
 scikit-image = "*"
 matplotlib = "*"
 keras-tuner = "*"
+keras = "*"
 
 [dev-packages]
 tqdm = "*"

@@ -1,37 +1,16 @@
 import os
-import cv2
-import json
-import pandas as pd
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, TimeDistributed
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
-from keras_tuner.tuners import RandomSearch
-import matplotlib.pyplot as plt
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.models import load_model
-from sklearn.metrics import roc_curve, auc
-from tensorflow.keras.callbacks import CSVLogger
 
+import pandas as pd
 # Check GPU
 import tensorflow as tf
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-# Configure TensorFlow to use the GPU
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
+from keras_tuner.tuners import RandomSearch
+from tensorflow.keras.callbacks import CSVLogger
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
 
 
-def create_datasets(base_dir="../data"):
+def create_datasets(base_dir="../../data"):
     # Separate lists for each dataset
     train_data = []
     val_data = []
@@ -82,8 +61,6 @@ def create_datasets(base_dir="../data"):
 
     return train_df, val_df, test_df
 
-train_df, val_df, test_df = create_datasets()
-
 def load_and_preprocess_image(file_path):
     # Load the image from the file path
     image = tf.io.read_file(file_path)
@@ -115,13 +92,6 @@ def create_tf_dataset(df, batch_size=32, shuffle=True):
 
     return dataset
 
-# Parameters
-batch_size = 64
-
-# Create datasets
-train_dataset = create_tf_dataset(train_df, batch_size=batch_size)
-validation_dataset = create_tf_dataset(val_df, batch_size=batch_size)
-
 def build_model(hp):
     model = Sequential()
     model.add(Conv2D(hp.Int('filters_1', min_value=32, max_value=128, step=32),
@@ -139,28 +109,50 @@ def build_model(hp):
                   metrics=['accuracy'])
     return model
 
-# Set up the tuner
-csv_logger = CSVLogger('training_output.csv', append=True)
+if __name__ == '__main__':
+    # Check for GPU, if exists, configure it
+    print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+    # Configure TensorFlow to use the GPU
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
 
-tuner = RandomSearch(
-    build_model,
-    objective='val_accuracy',
-    max_trials=1,
-    executions_per_trial=1,
-    directory='tuner_dir_rd_2',
-    project_name='cnn_tuning'
-)
-# Start tuning
-tuner.search(train_dataset, validation_data=validation_dataset, epochs=10, callbacks=[csv_logger])
+    # Create datasets
+    train_df, val_df, test_df = create_datasets()
 
-# Get the best model
-best_model = tuner.get_best_models(num_models=1)[0]
+    # To ensure no memory issues, create tf dataset
+    batch_size = 64
+    train_dataset = create_tf_dataset(train_df, batch_size=batch_size)
+    validation_dataset = create_tf_dataset(val_df, batch_size=batch_size)
 
-# Get the best model
-best_model = tuner.get_best_models(num_models=1)[0]
+    # Set up the tuner
+    csv_logger = CSVLogger('training_output.csv', append=True)
 
-# 1. Save the best model
-best_model.save("best_cnn_model_round2.h5")  # Saves the model as an H5 file
+    tuner = RandomSearch(
+        build_model,
+        objective='val_accuracy',
+        max_trials=5,
+        executions_per_trial=1,
+        directory='tuner_dir',
+        project_name='cnn_tuning'
+    )
 
-# 2. Print the model summary
-best_model.summary()
+    # Start tuning
+    tuner.search(train_dataset, validation_data=validation_dataset, epochs=10, callbacks=[csv_logger])
+
+    # Get the best model
+    best_model = tuner.get_best_models(num_models=1)[0]
+
+    # 1. Save the best model
+    best_model.save("best_cnn_model.h5")  # Saves the model as an H5 file
+
+    # 2. Print the model summary
+    best_model.summary()
