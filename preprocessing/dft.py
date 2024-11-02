@@ -1,8 +1,23 @@
 import cv2
 import numpy as np
 
+from typing import Optional
 
-def extract_dft_feature_from_video(video_path):
+def extract_dft_feature_from_video(video_path: str) -> Optional[np.ndarray]:
+    """
+    Extracts the Discrete Fourier Transform of the grayscaled image.
+
+    Args:
+        video_path (str): Path to the video, as a string.
+
+    Returns:
+        Either `None` or a NumPy array representing the DFT.
+
+    Example usage:
+        video_path = "../example-output/aapnvogymq.mp4" 
+        dft_features = extract_dft_feature_from_video(video_path)
+    """
+
     # Capture the video
     cap = cv2.VideoCapture(video_path)
 
@@ -41,13 +56,3 @@ def extract_dft_feature_from_video(video_path):
     dft_features_array = np.array(dft_features)
 
     return dft_features_array
-
-
-"""
-# Example usage:
-video_path = "../example-output/aapnvogymq.mp4" 
-dft_features = extract_dft_feature_from_video(video_path)
-
-if dft_features is not None:
-    print(f"Extracted DFT feature shape: {dft_features.shape}")
-"""

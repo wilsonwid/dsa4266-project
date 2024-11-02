@@ -1,9 +1,34 @@
 import cv2
 import numpy as np
+
 from skimage import feature
+from typing import Optional
 
 
-def extract_lbp_feature_from_video(video_path, num_points=16, radius=1):
+def extract_lbp_feature_from_video(
+        video_path: str, 
+        num_points: int = 16, 
+        radius: int = 1
+    ) -> Optional[np.ndarray]:
+    """
+    Extracts the Local Binary Patterns of the grayscaled image.
+
+    Args:
+        video_path (str): Path to the video, as a string.
+        num_points (int): Number of points to be used in the LBP. Defaults to 16.
+        radius (int): Radius to be taken for the LBP. Defaults to 1.
+
+    Returns:
+        Either `None` or a NumPy array representing the DFT.
+
+    Example usage:
+        video_path = "../example-output/aapnvogymq.mp3" 
+        lbp_features = extract_lbp_feature_from_video(video_path)
+
+        if lbp_features is not None:
+            print(f"Extracted LBP feature shape: {lbp_features.shape}")
+    """
+
     # Capture the video
     cap = cv2.VideoCapture(video_path)
 
@@ -42,13 +67,3 @@ def extract_lbp_feature_from_video(video_path, num_points=16, radius=1):
     lbp_features_array = np.array(lbp_features)
 
     return lbp_features_array
-
-
-"""
-# Example usage:
-video_path = "../example-output/aapnvogymq.mp4" 
-lbp_features = extract_lbp_feature_from_video(video_path)
-
-if lbp_features is not None:
-    print(f"Extracted LBP feature shape: {lbp_features.shape}")
-"""
