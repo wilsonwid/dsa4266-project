@@ -9,7 +9,7 @@ import datetime as dt
 import argparse
 import subprocess
 
-from utils.dataset import VideoDataset
+from utils.dataset_vitmae import VideoDatasetMAE
 from models.vitmae.vitmae import CustomViTMAE
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -138,7 +138,7 @@ def get_arguments() -> argparse.Namespace:
         prog="train_rcnn",
         description="Trains the RCNN Model"
     )
-    parser.add_argument("--steps", type=int, default=32,
+    parser.add_argument("--steps", type=int, default=128,
                         help="Number of steps")
     parser.add_argument("--dropout_prob", type=float, default=0.25,
                         help="Dropout probability")
@@ -148,7 +148,7 @@ def get_arguments() -> argparse.Namespace:
                         help="Number of epochs")
     parser.add_argument("--filename", type=str, default=FILENAME,
                         help="Filename to save the model")
-    parser.add_argument("--batch_size", type=int, default=4,
+    parser.add_argument("--batch_size", type=int, default=128,
                     help="Batch size for training")
 
     return parser.parse_args()
@@ -157,15 +157,18 @@ if __name__ == "__main__":
     args = get_arguments()
     model = CustomViTMAE(
         dropout_prob=args.dropout_prob,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        in_channels=3,
+        kernel_size=3,
+        steps=args.steps
     )
 
     model = nn.DataParallel(model)
 
-    train_dataset = VideoDataset(root=f"{main_folder_path}/data/train", clip_len=args.steps)
+    train_dataset = VideoDatasetMAE(root=f"{main_folder_path}/data/train", clip_len=args.steps)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=8)
 
-    val_dataset = VideoDataset(root=f"{main_folder_path}/data/validation", clip_len=args.steps)
+    val_dataset = VideoDatasetMAE(root=f"{main_folder_path}/data/validation", clip_len=args.steps)
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=8)
     
     train_model(

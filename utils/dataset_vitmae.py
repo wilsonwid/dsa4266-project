@@ -26,7 +26,7 @@ def get_samples(root: str, extensions: tuple[str] = (".mp4",)):
     _, class_to_idx = find_classes(root)
     return make_dataset(root, class_to_idx, extensions=extensions)
 
-class VideoDataset(torch.utils.data.IterableDataset):
+class VideoDatasetMAE(torch.utils.data.IterableDataset):
     def __init__(
             self, 
             root: str,
@@ -47,7 +47,7 @@ class VideoDataset(torch.utils.data.IterableDataset):
         self.num_lbp_points = num_lbp_points
         self.lbp_radius = lbp_radius
         if image_processor is None:
-            image_processor = AutoImageProcessor.from_pretrained("facebook/vit-mae-large")
+            image_processor = AutoImageProcessor.from_pretrained("facebook/vit-mae-large", use_fast=True)
         self.image_processor = image_processor
 
     
@@ -89,10 +89,10 @@ class VideoDataset(torch.utils.data.IterableDataset):
                 dft_feature_vector = torch.Tensor(magnitude_spectrum / np.linalg.norm(magnitude_spectrum)).unsqueeze(dim=0)
                 dct_feature_vector = torch.Tensor(dct / np.linalg.norm(dct)).unsqueeze(dim=0)
 
-                combined_frame = torch.cat([dft_feature_vector, dct_feature_vector, torch.Tensor(lbp).unsqueeze(dim=0)], dim=0)
+                combined_frame = torch.cat([dft_feature_vector, dct_feature_vector, torch.Tensor(lbp).unsqueeze(dim=0)], dim=0).type(torch.uint8)
 
-                video_frames.append(self.image_processor(frame["data"])["pixel_values"])
-                proc_frames.append(self.image_processor(combined_frame)["pixel_values"])
+                video_frames.append(self.image_processor(frame["data"], return_tensors="pt")["pixel_values"].squeeze(0))
+                proc_frames.append(self.image_processor(combined_frame, return_tensors="pt")["pixel_values"].squeeze(0))
 
                 current_pts = frame["pts"]
 
