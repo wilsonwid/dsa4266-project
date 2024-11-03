@@ -3,7 +3,6 @@ import sys
 import os
 main_folder_path = os.path.dirname(__file__) + "/../.."
 sys.path.append(main_folder_path)
-from sympy import Q
 import torch
 import torch.nn as nn
 import datetime as dt
@@ -11,8 +10,7 @@ import argparse
 import subprocess
 
 from utils.dataset import VideoDataset
-from models.vivit.vivit import CNN_LSTM
-from utils.utils import convert_str_to_nonlinearity
+from models.vitmae.vitmae import CustomViTMAE
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -20,13 +18,12 @@ from sklearn.metrics import f1_score
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MODEL_NAME = "cnn_lstm"
+MODEL_NAME = "vitmae"
 NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
-SAVE_DIR = f"{main_folder_path}/models/cnn_lstm/saved_models"
+SAVE_DIR = f"{main_folder_path}/models/vitmae/saved_models"
 DATA_FOLDER = "data"
 INF = 100000000.
-FC_SIZE = 205520896
 
 timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 writer = SummaryWriter(f"runs/rcnn_{timestamp}")
@@ -67,10 +64,10 @@ def train_model(
         collected_labels, collected_predictions = [], []
         for i, data in tqdm(enumerate(train_dataloader)):
             subprocess.run(["nvidia-smi"])
-            inputs, labels = data["video"].to(device), data["target"].to(device)
+            vid_inputs, proc_inputs, labels = data["video"].to(device), data["proc"].to(device), data["target"].to(device)
 
             optimizer.zero_grad()
-            output = model(inputs)
+            output = model(video=vid_inputs, proc=proc_inputs)
             loss = loss_fn(output, labels)
             loss.backward()
             optimizer.step()
@@ -94,8 +91,8 @@ def train_model(
         with torch.no_grad():
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_dataloader):
-                inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
-                output = model(inputs)
+                vid_inputs, proc_inputs, labels = vdata["video"].to(device), vdata["proc"].to(device), vdata["target"].to(device)
+                output = model(video=vid_inputs, proc=proc_inputs)
                 loss = loss_fn(output, labels)
                 running_loss += loss.item()
 
@@ -141,30 +138,10 @@ def get_arguments() -> argparse.Namespace:
         prog="train_rcnn",
         description="Trains the RCNN Model"
     )
-    parser.add_argument("--input_dim", type=int, default=6,
-                        help="Input dimension")
-    parser.add_argument("--num_cnn_layers", type=int, default=5, 
-                        help="Number of CNN layers")
-    parser.add_argument("--num_kernels", type=int, default=128,
-                        help="Number of kernels in each RCL layer")
-    parser.add_argument("--kernel_size", type=int, default=3,
-                        help="Kernel size (as int)")
-    parser.add_argument("--stride", type=int, default=1,
-                        help="Stride (as int)")
-    parser.add_argument("--padding", type=int, default=1,
-                        help="Padding (as int)")
-    parser.add_argument("--dropout_prob", type=float, default=0.25,
-                        help="Dropout probability")
-    parser.add_argument("--bias", type=bool, default=False,
-                        help="Bias (as bool)")
-    parser.add_argument("--num_lstm_layers", type=int, default=5,
-                        help="Number of LSTM layers")
-    parser.add_argument("--bidirectional", type=bool, default=True,
-                        help="Use bidirectional LSTM (as bool)")
-    parser.add_argument("--input_shape", type=tuple[int, int], default=(224, 224), 
-                        help="Input shape")
     parser.add_argument("--steps", type=int, default=32,
                         help="Number of steps")
+    parser.add_argument("--dropout_prob", type=float, default=0.25,
+                        help="Dropout probability")
     parser.add_argument("--num_classes", type=int, default=2,
                         help="Number of classes")
     parser.add_argument("--epochs", type=int, default=10,
@@ -173,27 +150,14 @@ def get_arguments() -> argparse.Namespace:
                         help="Filename to save the model")
     parser.add_argument("--batch_size", type=int, default=4,
                     help="Batch size for training")
-    parser.add_argument("--fc_size", type=int, default=FC_SIZE,
-                        help="Last fully connected layer size")
 
     return parser.parse_args()
     
 if __name__ == "__main__":
     args = get_arguments()
-    model = CNN_LSTM(
-        input_channels=args.input_dim,
-        num_cnn_layers=args.num_cnn_layers,
-        num_kernels=args.num_kernels,
-        kernel_size=args.kernel_size,
-        stride=args.stride,
-        padding=args.padding,
+    model = CustomViTMAE(
         dropout_prob=args.dropout_prob,
-        bias=args.bias,
-        num_lstm_layers=args.num_lstm_layers,
-        num_classes=args.num_classes,
-        bidirectional=args.bidirectional,
-        input_shape=args.input_shape,
-        fc_size=args.fc_size
+        num_classes=args.num_classes
     )
 
     model = nn.DataParallel(model)

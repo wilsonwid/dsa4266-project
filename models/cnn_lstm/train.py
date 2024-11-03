@@ -193,7 +193,8 @@ if __name__ == "__main__":
         num_classes=args.num_classes,
         bidirectional=args.bidirectional,
         input_shape=args.input_shape,
-        fc_size=args.fc_size
+        fc_size=args.fc_size,
+        seq_len=args.steps
     )
 
     model = nn.DataParallel(model)

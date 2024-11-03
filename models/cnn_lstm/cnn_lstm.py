@@ -18,10 +18,12 @@ class CNN_LSTM(nn.Module):
             dropout_prob: float = 0.25,
             bias: bool = False,
             num_lstm_layers: int = 5,
+            hidden_size: int = 128,
             num_classes: int = 2,
             bidirectional: bool = True,
             input_shape: tuple[int, int] = (224, 224),
-            fc_size: int = FC_SIZE
+            fc_size: int = FC_SIZE,
+            seq_len: int = 32
         ):
         super().__init__()
         self.input_channels = input_channels
@@ -33,10 +35,12 @@ class CNN_LSTM(nn.Module):
         self.dropout_prob = dropout_prob
         self.bias = bias
         self.num_lstm_layers = num_lstm_layers
+        self.hidden_size = hidden_size
         self.num_classes = num_classes
         self.bidirectional = bidirectional
         self.input_shape = input_shape
         self.fc_size = fc_size
+        self.seq_len = seq_len
 
         self.input_conv = nn.Conv3d(
             in_channels=self.input_channels,
@@ -63,7 +67,16 @@ class CNN_LSTM(nn.Module):
                          padding=self.padding)
         for _ in range(self.num_cnn_layers)])
 
-        self.fc = nn.Linear(self.fc_size, self.num_classes)
+        self.lstm = nn.LSTM(
+            input_size=self.num_kernels * self.input_shape[0] * self.input_shape[1],
+            hidden_size=self.hidden_size,
+            num_layers=self.num_lstm_layers,
+            dropout=self.dropout_prob,
+            bidirectional=self.bidirectional,
+            batch_first=True
+        )
+
+        self.fc = nn.Linear(2 * self.hidden_size * self.seq_len, self.num_classes)
         self.softmax = nn.Softmax(dim=1)
 
 
@@ -75,7 +88,10 @@ class CNN_LSTM(nn.Module):
             x = self.convs[i](x)
             x = self.poolings[i](x)
 
-        x = self.softmax(self.fc(x.flatten(start_dim=1)))
+        x = x.permute(0, 2, 1, 3, 4)
+        x = x.flatten(start_dim=2)
+        (x, _) = self.lstm(x)
+        x = x.flatten(start_dim=1)
+        x = self.fc(x)
         return x
-
 
