@@ -4,7 +4,6 @@ import torch.nn as nn
 
 from utils.types import NonlinearityEnum
 from utils.utils import select_nonlinearity
-from utils.utils import INPUT_SHAPE
 
 class RecurrentConvolutionalLayer(nn.Module):
     """

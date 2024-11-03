@@ -23,6 +23,7 @@ NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
 SAVE_DIR = "models/rcnn/saved_models"
 DATA_FOLDER = "data"
+INF = 100000000.
 
 timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 writer = SummaryWriter(f"runs/rcnn_{timestamp}")
@@ -56,6 +57,7 @@ def train_model(
 
     running_loss = 0.
     last_loss = 0.
+    best_vloss = INF
 
     for epoch in tqdm(range(epochs)):
         model.train()
@@ -88,7 +90,7 @@ def train_model(
         with torch.no_grad():
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_dataloader):
-                inputs, labels = vdata["data"].to(device), vdata["target"].to(device)
+                inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
                 output = model(inputs)
                 loss = loss_fn(output, labels)
                 running_loss += loss.item()
@@ -96,7 +98,7 @@ def train_model(
                 collected_labels.append(labels.cpu())
                 collected_predictions.append(output.argmax(dim=1).cpu())
             val_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions))
-            print(f"Validation Loss: {loss.item()}, ValidationF1 score: {val_f1}")
+            print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}")
 
 
         avg_vloss = running_loss / (i + 1)
