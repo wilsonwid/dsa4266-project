@@ -65,11 +65,9 @@ class VideoDataset(torch.utils.data.IterableDataset):
         for i in range(iter_start, iter_end, 1):
             path, target = self.samples[i]
             vid = torchvision.io.VideoReader(path, "video")
-            metadata = vid.get_metadata()
             video_frames = []
 
-            max_seek = metadata["video"]["duration"][0] - (self.clip_len / metadata["video"]["fps"][0])
-            start = random.uniform(0., max_seek)
+            start = 0.
 
             for frame in itertools.islice(vid.seek(start), self.clip_len):
                 gray_frame = cv2.cvtColor(frame["data"].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2GRAY)

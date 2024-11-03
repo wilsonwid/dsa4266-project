@@ -11,7 +11,7 @@ import argparse
 import subprocess
 
 from utils.dataset import VideoDataset
-from cnn_lstm import CNN_LSTM
+from models.vivit.vivit import CNN_LSTM
 from utils.utils import convert_str_to_nonlinearity
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter

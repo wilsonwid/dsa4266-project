@@ -1,12 +1,9 @@
 import torch
 import torch.nn as nn
 
-from utils.types import NonlinearityEnum
-from utils.utils import select_nonlinearity
+from transformers import Vi
 
-FC_SIZE = 205520896
-
-class CNN_LSTM(nn.Module):
+class ViViT(nn.Module):
     def __init__(
             self,
             input_channels: int,

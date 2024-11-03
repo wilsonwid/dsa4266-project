@@ -92,7 +92,8 @@ class RecurrentConvolutionalNetwork(nn.Module):
             nonlinearity: NonlinearityEnum = NonlinearityEnum.RELU,
             bias: bool = False,
             steps: int = 5,
-            num_classes: int = 2
+            num_classes: int = 2,
+            fc_size: int = 7009280
         ):
         super().__init__()
         self.input_channels = input_channels
@@ -106,6 +107,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
         self.bias = bias
         self.steps = steps
         self.num_classes = num_classes
+        self.fc_size = fc_size
 
         self.init_conv_layer = nn.Conv3d(
             in_channels=self.input_channels,
@@ -142,10 +144,12 @@ class RecurrentConvolutionalNetwork(nn.Module):
         ) for _ in range(self.num_recurrent_layers)])
 
         self.fc = nn.Linear(
-            in_features=self.num_kernels * 5 * 74 * 74,
+            in_features=self.fc_size,
             out_features=self.num_classes,
             bias=self.bias
         )
+
+        self.softmax = nn.Softmax(dim=1)
 
         for module in self.modules():
             if isinstance(module, nn.Conv3d):
@@ -168,4 +172,5 @@ class RecurrentConvolutionalNetwork(nn.Module):
         x = x.flatten(start_dim=1)
         x = nn.functional.dropout(x, p=self.dropout_prob)
         x = self.fc(x)
+        x = self.softmax(x)
         return x

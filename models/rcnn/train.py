@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import datetime as dt
 import argparse
+import subprocess
 
 from rcnn import RecurrentConvolutionalNetwork
 from utils.dataset import VideoDataset
@@ -16,14 +17,15 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 MODEL_NAME = "rcnn"
 NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
-SAVE_DIR = "models/rcnn/saved_models"
+SAVE_DIR = f"{main_folder_path}/models/rcnn/saved_models"
 DATA_FOLDER = "data"
 INF = 100000000.
+FC_SIZE = 7009280
 
 timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 writer = SummaryWriter(f"runs/rcnn_{timestamp}")
@@ -63,6 +65,7 @@ def train_model(
         model.train()
         collected_labels, collected_predictions = [], []
         for i, data in tqdm(enumerate(train_dataloader)):
+            subprocess.run(["nvidia-smi"])
             inputs, labels = data["video"].to(device), data["target"].to(device)
 
             optimizer.zero_grad()
@@ -77,7 +80,7 @@ def train_model(
 
             if i % 10 == 9:
                 last_loss = running_loss / 10
-                epoch_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions))
+                epoch_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions), average="weighted")
                 print(f"Batch: {i + 1}, Loss: {last_loss}, F1 score: {epoch_f1}")
                 tb_x = epoch * len(train_dataloader) + i + 1
 
@@ -97,7 +100,7 @@ def train_model(
 
                 collected_labels.append(labels.cpu())
                 collected_predictions.append(output.argmax(dim=1).cpu())
-            val_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions))
+            val_f1 = f1_score(torch.cat(collected_labels), torch.cat(collected_predictions), average="weighted")
             print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}")
 
 
@@ -155,7 +158,7 @@ def get_arguments() -> argparse.Namespace:
                         help="Nonlinearity function (as str)")
     parser.add_argument("--bias", type=bool, default=False,
                         help="Bias (as bool)")
-    parser.add_argument("--steps", type=int, default=16,
+    parser.add_argument("--steps", type=int, default=32,
                         help="Number of steps")
     parser.add_argument("--num_classes", type=int, default=2,
                         help="Number of classes")
@@ -163,8 +166,10 @@ def get_arguments() -> argparse.Namespace:
                         help="Number of epochs")
     parser.add_argument("--filename", type=str, default=FILENAME,
                         help="Filename to save the model")
-    parser.add_argument("--batch_size", type=int, default=8,
+    parser.add_argument("--batch_size", type=int, default=12,
                     help="Batch size for training")
+    parser.add_argument("--fc_size", type=int, default=FC_SIZE,
+                        help="Last fully connected layer size")
 
     return parser.parse_args()
     
@@ -181,8 +186,11 @@ if __name__ == "__main__":
         nonlinearity=convert_str_to_nonlinearity(args.nonlinearity),
         bias=args.bias,
         steps=args.steps,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        fc_size=args.fc_size
     )
+
+    model = nn.DataParallel(model)
 
     train_dataset = VideoDataset(root=f"{main_folder_path}/data/train", clip_len=args.steps)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=8)
