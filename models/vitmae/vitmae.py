@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from math import ceil
 from transformers import ViTMAEModel
 
 class CustomViTMAE(nn.Module):
@@ -10,6 +11,8 @@ class CustomViTMAE(nn.Module):
             num_classes: int = 2,
             in_channels: int = 3,
             kernel_size: int = 3,
+            stride: int = 1,
+            padding: int = 1,
             steps: int = 32
         ):
         super().__init__()
@@ -17,21 +20,42 @@ class CustomViTMAE(nn.Module):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = ceil((223*stride - 224 + kernel_size)/2)
         self.steps = steps
 
-        self.video_conv = nn.Conv3d(in_channels=self.in_channels, out_channels=1, kernel_size=self.kernel_size, padding=1)
-        self.proc_conv = nn.Conv3d(in_channels=self.in_channels, out_channels=1, kernel_size=self.kernel_size, padding=1)
+        self.video_conv = nn.Conv3d(
+            in_channels=self.in_channels, 
+            out_channels=1, 
+            kernel_size=self.kernel_size, 
+            stride=self.stride,
+            padding=self.padding
+        )
+        self.proc_conv = nn.Conv3d(
+            in_channels=self.in_channels, 
+            out_channels=1, 
+            kernel_size=self.kernel_size, 
+            stride=self.stride,
+            padding=self.padding
+        )
 
         self.video_model = ViTMAEModel.from_pretrained("facebook/vit-mae-large")
         self.proc_model = ViTMAEModel.from_pretrained("facebook/vit-mae-large")
 
-        self.video_conv2d = nn.Conv2d(in_channels=self.steps,
-                                      out_channels=3,
-                                      kernel_size=self.kernel_size,
-                                      padding=1)
-        self.proc_conv2d = nn.Conv2d(in_channels=self.steps,
-                                     out_channels=3,
-                                     kernel_size=self.kernel_size, padding=1)
+        self.video_conv2d = nn.Conv2d(
+            in_channels=self.steps,
+            out_channels=3,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding
+        )
+        self.proc_conv2d = nn.Conv2d(
+            in_channels=self.steps,
+            out_channels=3,
+            kernel_size=self.kernel_size, 
+            stride=self.stride,
+            padding=self.padding
+        )
 
         self.dropout = nn.Dropout(p=self.dropout_prob)
         self.fc = nn.Linear(self.video_model.config.hidden_size, self.num_classes)

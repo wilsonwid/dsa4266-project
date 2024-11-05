@@ -9,4 +9,4 @@
 #SBATCH --error=error_vitmae.log
 #SBATCH --partition=gpu
 
-srun train.sh
+srun models/vitmae/train.sh
