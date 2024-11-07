@@ -168,7 +168,6 @@ def train_model(
 
         if avg_vloss < best_vloss:
             best_vloss = avg_vloss
-            model_path = f"{SAVE_DIR}/{MODEL_NAME}_{timestamp}_{epoch + 1}.pt"
 
 
         checkpoint_data = {

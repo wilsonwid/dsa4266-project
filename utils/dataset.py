@@ -3,12 +3,10 @@ import os
 import random
 import torch
 import torchvision
-import itertools
 import numpy as np
 import cv2
 
 from torchvision.datasets.folder import make_dataset
-from torchvision import transforms
 from typing import Optional
 from utils.utils import SEED
 from skimage import feature
@@ -33,7 +31,8 @@ class VideoDataset(torch.utils.data.IterableDataset):
             epoch_size: Optional[int] = None,
             clip_len: int = 16,
             num_lbp_points: int = 16,
-            lbp_radius: int = 1
+            lbp_radius: int = 1,
+            include_additional_transforms: bool = False
         ):
         super().__init__()
 
@@ -45,6 +44,7 @@ class VideoDataset(torch.utils.data.IterableDataset):
         self.clip_len = clip_len
         self.num_lbp_points = num_lbp_points
         self.lbp_radius = lbp_radius
+        self.include_additional_transforms = include_additional_transforms
     
     def __len__(self):
         return len(self.samples)
@@ -69,23 +69,28 @@ class VideoDataset(torch.utils.data.IterableDataset):
 
             start = 0.
 
-            for frame in itertools.islice(vid.seek(start), self.clip_len):
-                gray_frame = cv2.cvtColor(frame["data"].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2GRAY)
+            for frame in vid:
+                if self.include_additional_transforms:
+                    gray_frame = cv2.cvtColor(frame["data"].permute(1, 2, 0).numpy(), cv2.COLOR_RGB2GRAY)
 
-                dft = cv2.dft(np.float32(gray_frame), flags=cv2.DFT_COMPLEX_OUTPUT)
-                dct = cv2.dct(np.float32(gray_frame))
-                lbp = feature.local_binary_pattern(gray_frame, self.num_lbp_points, self.lbp_radius, method="uniform")
+                    dft = cv2.dft(np.float32(gray_frame), flags=cv2.DFT_COMPLEX_OUTPUT)
+                    dct = cv2.dct(np.float32(gray_frame))
+                    lbp = feature.local_binary_pattern(gray_frame, self.num_lbp_points, self.lbp_radius, method="uniform")
 
-                dft_shift = np.fft.fftshift(dft)
-                magnitude_spectrum = cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1])
+                    dft_shift = np.fft.fftshift(dft)
+                    magnitude_spectrum = cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1])
 
-                dft_feature_vector = torch.Tensor(magnitude_spectrum / np.linalg.norm(magnitude_spectrum)).unsqueeze(dim=0)
-                dct_feature_vector = torch.Tensor(dct / np.linalg.norm(dct)).unsqueeze(dim=0)
+                    dft_feature_vector = torch.Tensor(magnitude_spectrum / np.linalg.norm(magnitude_spectrum)).unsqueeze(dim=0)
+                    dct_feature_vector = torch.Tensor(dct / np.linalg.norm(dct)).unsqueeze(dim=0)
 
-                combined_frame = torch.cat([dft_feature_vector, dct_feature_vector, torch.Tensor(lbp).unsqueeze(dim=0), frame["data"]], dim=0)
-
+                    combined_frame = torch.cat([dft_feature_vector.type(torch.float32), dct_feature_vector.type(torch.float32), torch.Tensor(lbp).unsqueeze(dim=0).type(torch.float32), frame["data"].type(torch.float32)], dim=0)
+                else:
+                    combined_frame = frame["data"].type(torch.float32)
                 video_frames.append(combined_frame)
                 current_pts = frame["pts"]
+
+                if len(video_frames) == self.clip_len:
+                    break
             video = torch.stack(video_frames, 0)
             output = {
                 "path": path,
