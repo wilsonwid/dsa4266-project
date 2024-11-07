@@ -36,7 +36,7 @@ The exploratory data analysis (EDA) phase provided essential insights into the d
 - **Dimensionality Reduction**: `scikit-learn` (PCA, t-SNE)
 - **Media Processing**: `OpenCV`, `ffmpeg`, `torch`, `torchvision`
 
-**Key findings** from the EDA are summarised as follows:
+## Key Findings
 
 ### Class Imbalance
 
