@@ -30,7 +30,15 @@ Repository for DSA4266 project.
 
 # Project description
 
-The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models, including frame-based Convolutional Neural Networks (**CNN**), Residual Networks (**ResNet**), Region-based CNNs (**RCNN**), CNN-Long Short Term Memory (**CNN-LSTM**), and **Vision Video Transformers**, on the Deepfake Detection Challenge (DFDC) dataset. The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, high precision and recall should be achieved, ensuring minimal false positives (incorrectly labelling real videos as fake) and false negatives (failing to detect a deepfake).
+The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
+
+- Frame-based Convolutional Neural Networks (**CNN**)
+- Residual Networks (**ResNet**)
+- Region-based CNNs (**RCNN**)
+- CNN-Long Short Term Memory (**CNN-LSTM**)
+- **Vision Video Transformers**
+
+The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, **high precision** and **recall** should be achieved, ensuring minimal **false positives** (incorrectly labelling real videos as fake) and **false negatives** (failing to detect a deepfake).
 
 # Dataset
 
