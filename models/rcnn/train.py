@@ -83,7 +83,7 @@ def train_model(
 
     model = RecurrentConvolutionalNetwork(
         input_channels=config["input_channels"],
-        num_recurent_layers=config["num_recurrent_layers"],
+        num_recurrent_layers=config["num_recurrent_layers"],
         num_kernels=config["num_kernels"],
         kernel_size=config["kernel_size"],
         stride=config["stride"],
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         "bias": False,
         "steps": tune.choice([2 ** i for i in range(4, 7)]),
         "num_classes": NUM_CLASSES,
-        "batch_size": tune.choice([1, 2, 4]),
+        "batch_size": tune.choice([1, 2]),
         "lr": tune.loguniform(1e-4, 1e-1),
         "include_additional_transforms": False
     }
@@ -297,7 +297,7 @@ if __name__ == "__main__":
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=1,
+        num_samples=20,
         scheduler=scheduler
     )
 
@@ -309,7 +309,7 @@ if __name__ == "__main__":
 
     best_trained_model = RecurrentConvolutionalNetwork(
         input_channels=best_trial.config["input_channels"],
-        num_recurent_layers=best_trial.config["num_recurent_layers"],
+        num_recurrent_layers=best_trial.config["num_recurrent_layers"],
         num_kernels=best_trial.config["num_kernels"],
         kernel_size=best_trial.config["kernel_size"],
         stride=best_trial.config["stride"],

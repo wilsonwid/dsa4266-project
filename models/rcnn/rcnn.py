@@ -83,7 +83,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
     def __init__(
             self,
             input_channels:  int,
-            num_recurent_layers: int,
+            num_recurrent_layers: int,
             num_kernels: int = 96,
             kernel_size: int | tuple[int, int, int] = 3,
             stride: int | tuple[int, int, int] = 1,
@@ -96,7 +96,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
         ):
         super().__init__()
         self.input_channels = input_channels
-        self.num_recurrent_layers = num_recurent_layers
+        self.num_recurrent_layers = num_recurrent_layers
         self.num_kernels = num_kernels
         self.kernel_size = kernel_size
         self.stride = stride

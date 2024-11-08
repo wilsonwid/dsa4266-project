@@ -307,7 +307,7 @@ if __name__ == "__main__":
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=1,
+        num_samples=20,
         scheduler=scheduler
     )
 
