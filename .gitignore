@@ -166,8 +166,12 @@ cython_debug/
 
 #DS_store
 .DS_Store
+
 /models/cnn/results/
 /models/cnn/training_output.csv
 /models/cnn/tuner_dir/
 /models/cnn/best_cnn_model.h5
 /evaluation/evaluation-results/
+
+/models/resnet/results
+/models/resnet/best_model.keras
