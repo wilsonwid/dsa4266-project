@@ -28,7 +28,7 @@ class ConvLSTMCell(nn.Module):
 
         self.conv = nn.Conv2d(
             in_channels=self.input_dim + self.hidden_dim,
-            out_channels=4 * self.hidden_dim,
+            out_channels=2 * self.hidden_dim,
             kernel_size=self.kernel_size,
             stride=self.stride,
             padding=self.padding,
@@ -67,7 +67,6 @@ class ConvLSTM(nn.Module):
             stride,
             padding,
             num_layers,
-            steps,
             batch_first=False,
             bias=True,
             return_all_layers=False
@@ -88,7 +87,6 @@ class ConvLSTM(nn.Module):
         self.stride = stride
         self.padding = padding
         self.num_layers = num_layers
-        self.steps = steps
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers
@@ -203,7 +201,7 @@ class ConvLSTMModel(nn.Module):
             return_all_layers=self.return_all_layers
         )
 
-        self.fc1 = nn.Linear(self.hidden_dim[-1] * 1)
+        self.fc1 = nn.Linear(self.hidden_dim * self.num_layers, 2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x, _ = self.convlstm(x)
