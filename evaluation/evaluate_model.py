@@ -97,13 +97,11 @@ def save_classification_report_image(y_true, y_pred_binary, model_name, output_d
     print(f"Styled classification report saved as image to {output_dir}/{model_name}_classification_report.png")
 
 def save_model_diagram(model, model_name, output_dir='evaluation-results'):
-    """Generate and save the model diagram."""
     os.makedirs(output_dir, exist_ok=True)
     plot_model(model, to_file=f"{output_dir}/{model_name}_model_diagram.png", show_shapes=True, show_layer_names=True)
     print(f"Model diagram saved to {output_dir}/{model_name}_model_diagram.png")
 
-def evaluate_model(model_name, model_path, results_path):
-    """Evaluate a model using provided paths for the model and results CSV."""
+def evaluate_model(model_name, results_path, model_path=None):
     # Load the results CSV file
     results_df = load_results(results_path)
 
@@ -123,6 +121,7 @@ def evaluate_model(model_name, model_path, results_path):
     # Save the classification report as an image
     save_classification_report_image(y_true, y_pred_binary, model_name)
 
-    # Load the model and save the model diagram
-    model = load_model(model_path)
-    save_model_diagram(model, model_name)
+    # Conditionally load the model and save the model diagram if model_path is provided
+    if model_path is not None:
+        model = load_model(model_path)
+        save_model_diagram(model, model_name)
