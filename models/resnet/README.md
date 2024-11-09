@@ -10,6 +10,4 @@ repo_id = "shylhy/resnet-keras-deepfake-subset"
 model_file_name = "deepfake_subset.keras" 
 model_file_path = hf_hub_download(repo_id=repo_id, filename=model_file_name)
 model = keras.models.load_model(model_file_path)
-model = keras.models.load_model(model_file_path)
-
 ```
