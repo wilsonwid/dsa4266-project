@@ -173,8 +173,8 @@ class RecurrentConvolutionalNetwork(nn.Module):
         x = x.flatten(start_dim=1)
         x = nn.functional.dropout(x, p=self.dropout_prob)
         x = self.fc1(x)
-        x = self.dropout1(x)
         x = self.activation1(x)
+        x = self.dropout1(x)
         x = self.fc2(x)
         x = self.softmax(x)
         return x
