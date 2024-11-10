@@ -28,6 +28,22 @@ Repository for DSA4266 project.
    - You can specify if the package is a development dependency by adding the `--dev` flag.
    - Remember to commit the `Pipfile` and `Pipfile.lock` after adding a new dependency.
 
+## Project description
+
+The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
+
+- Frame-based Convolutional Neural Networks (**CNN**)
+- Residual Networks (**ResNet**)
+- Region-based CNNs (**RCNN**)
+- CNN-Long Short Term Memory (**CNN-LSTM**)
+- **Vision Video Transformers**
+
+The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, **high precision** and **recall** should be achieved, ensuring minimal **false positives** (incorrectly labelling real videos as fake) and **false negatives** (failing to detect a deepfake).
+
+## Dataset
+
+[Deepfake Detection Challenge (DFDC)](https://www.kaggle.com/competitions/deepfake-detection-challenge/data), a collaborative initiative by AWS, Facebook, Microsoft, the Partnership on AI’s Media Integrity Steering Committee, and academics.
+
 ## Instructions for Dataset
 
 1. **Organize by Model Name**: Inside the `/data` folder, create subdirectories for each model you want to run, named exactly as specified:
@@ -46,22 +62,6 @@ Repository for DSA4266 project.
 
 - [Frames dataset](https://mega.nz/folder/fMgSib6K#kxDLFKpqvYMZSaMi3hoxCw) for frame-based models.
 - [Videos dataset](https://mega.nz/file/DIBmRRgC#gDPsrAJNF4zRKA0wCj0iRbbxNl1DIuI3SRKC0AUEvoU) for video-based models.
-
-## Project description
-
-The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
-
-- Frame-based Convolutional Neural Networks (**CNN**)
-- Residual Networks (**ResNet**)
-- Region-based CNNs (**RCNN**)
-- CNN-Long Short Term Memory (**CNN-LSTM**)
-- **Vision Video Transformers**
-
-The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, **high precision** and **recall** should be achieved, ensuring minimal **false positives** (incorrectly labelling real videos as fake) and **false negatives** (failing to detect a deepfake).
-
-## Dataset
-
-[Deepfake Detection Challenge (DFDC)](https://www.kaggle.com/competitions/deepfake-detection-challenge/data), a collaborative initiative by AWS, Facebook, Microsoft, the Partnership on AI’s Media Integrity Steering Committee, and academics.
 
 ## Repository structure
 
