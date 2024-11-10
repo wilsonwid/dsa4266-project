@@ -30,17 +30,17 @@ Repository for DSA4266 project.
 
 ## Instructions for Dataset
 
-1. **Organize by Model Name**: Inside this `data` folder, create subdirectories for each model you want to run, named exactly as specified:
+1. **Organize by Model Name**: Inside the `/data` folder, create subdirectories for each model you want to run, named exactly as specified:
 
-- `data/cnn`
-- `data/rcnn`
-- `data/resnet`
-- `data/videomae`
-- `data/vit`
+- `/data/cnn`
+- `/data/rcnn`
+- `/data/resnet`
+- `/data/videomae`
+- `/data/vit`
 
 2. **Unzip Data Files**: Unzip each model's dataset into the respective subdirectory.
 
-3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
+3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `/data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
 
 ### Preprocessed Dataset Links
 
