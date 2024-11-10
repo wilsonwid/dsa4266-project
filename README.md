@@ -28,6 +28,25 @@ Repository for DSA4266 project.
    - You can specify if the package is a development dependency by adding the `--dev` flag.
    - Remember to commit the `Pipfile` and `Pipfile.lock` after adding a new dependency.
 
+## Instructions for Dataset
+
+1. **Organize by Model Name**: Inside this `data` folder, create subdirectories for each model you want to run, named exactly as specified:
+
+- `data/cnn`
+- `data/rcnn`
+- `data/resnet`
+- `data/videomae`
+- `data/vit`
+
+2. **Unzip Data Files**: Unzip each model's dataset into the respective subdirectory.
+
+3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
+
+### Preprocessed Dataset Links
+
+- [Frames dataset](https://mega.nz/folder/fMgSib6K#kxDLFKpqvYMZSaMi3hoxCw) for frame-based models.
+- [Videos dataset](https://mega.nz/file/DIBmRRgC#gDPsrAJNF4zRKA0wCj0iRbbxNl1DIuI3SRKC0AUEvoU) for video-based models.
+
 ## Project description
 
 The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
