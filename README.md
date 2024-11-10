@@ -44,6 +44,25 @@ The models will leverage visual features extracted from video frames to distingu
 
 [Deepfake Detection Challenge (DFDC)](https://www.kaggle.com/competitions/deepfake-detection-challenge/data), a collaborative initiative by AWS, Facebook, Microsoft, the Partnership on AI’s Media Integrity Steering Committee, and academics.
 
+## Instructions for Dataset
+
+1. **Organize by Model Name**: Inside the `/data` folder, create subdirectories for each model you want to run, named exactly as specified:
+
+- `/data/cnn`
+- `/data/rcnn`
+- `/data/resnet`
+- `/data/videomae`
+- `/data/vit`
+
+2. **Unzip Data Files**: Unzip each model's dataset into the respective subdirectory.
+
+3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `/data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
+
+### Preprocessed Dataset Links
+
+- [Frames dataset](https://mega.nz/folder/fMgSib6K#kxDLFKpqvYMZSaMi3hoxCw) for frame-based models.
+- [Videos dataset](https://mega.nz/file/DIBmRRgC#gDPsrAJNF4zRKA0wCj0iRbbxNl1DIuI3SRKC0AUEvoU) for video-based models.
+
 ## Repository structure
 
 ```
