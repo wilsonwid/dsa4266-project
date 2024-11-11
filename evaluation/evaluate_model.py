@@ -38,7 +38,7 @@ def plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name, outp
     return optimal_threshold
 
 def plot_confusion_matrix(y_true, y_pred_binary, model_name, output_dir):
-    """Plot and save the confusion matrix."""
+    """Plot and save the confusion matrix, 0 = real and 1 = deepfake"""
     cm = confusion_matrix(y_true, y_pred_binary)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Deepfake"])
     disp.plot(cmap=plt.cm.Blues)
