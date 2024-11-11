@@ -293,7 +293,7 @@ if __name__ == "__main__":
     result = tune.run(
         partial(
             train_model, 
-            epochs=3
+            epochs=1
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,

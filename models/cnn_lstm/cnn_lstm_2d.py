@@ -183,7 +183,8 @@ class CNN_LSTM_2D(nn.Module):
             cur = self.max_pool(cur)
 
             for i in range(self.num_cnn_layers): 
-                collected.append(self.conv_blocks[i](cur))
+                cur = self.conv_blocks[i](cur)
+            collected.append(cur)
 
         x = torch.stack(collected, dim=2)
 

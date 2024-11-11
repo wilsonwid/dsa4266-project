@@ -107,24 +107,20 @@ class RecurrentConvolutionalNetwork(nn.Module):
         self.steps = steps
         self.num_classes = num_classes
 
-        self.init_conv_layer = nn.Conv3d(
-            in_channels=self.input_channels,
-            out_channels=self.num_kernels,
+        self.nonlinearity_layer = select_nonlinearity(self.nonlinearity)
+
+        self.recurrent_convolutional_layers = nn.ModuleList(
+        [RecurrentConvolutionalLayer(
+            input_dim=self.input_channels,
+            output_dim=self.num_kernels,
             kernel_size=self.kernel_size,
             stride=self.stride,
             padding=self.padding,
-            bias=self.bias
-        )
-
-        self.nonlinearity_layer = select_nonlinearity(self.nonlinearity)
-
-        self.batchnorm_layer = nn.BatchNorm3d(num_features=self.num_kernels)
-
-        self.dropout_layers = nn.ModuleList([nn.Dropout(
-            p=self.dropout_prob,
-        ) for _ in range(self.num_recurrent_layers // 2 + 1)])
-
-        self.recurrent_convolutional_layers = nn.ModuleList([RecurrentConvolutionalLayer(
+            bias=self.bias,
+            steps=self.steps,
+            nonlinearity=self.nonlinearity
+        )] +    
+        [RecurrentConvolutionalLayer(
             input_dim=self.num_kernels,
             output_dim=self.num_kernels,
             kernel_size=self.kernel_size,
@@ -133,13 +129,11 @@ class RecurrentConvolutionalNetwork(nn.Module):
             bias=self.bias,
             steps=self.steps,
             nonlinearity=self.nonlinearity
-        ) for _ in range(self.num_recurrent_layers)])
+        ) for _ in range(self.num_recurrent_layers - 1)])
 
-
-        self.fc_size = compute_linear_size_n(224, self.kernel_size, 1, 1, 1) * compute_linear_size_n(self.steps, self.kernel_size, 1, 1, 1) * self.num_kernels
 
         self.fc1 = nn.Linear(
-            in_features=self.fc_size,
+            in_features=self.num_kernels * self.steps * 224,
             out_features=64,
             bias=self.bias
         )
@@ -160,15 +154,11 @@ class RecurrentConvolutionalNetwork(nn.Module):
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.permute(0, 2, 1, 3, 4)
-        x = self.init_conv_layer(x)
-        x = self.batchnorm_layer(self.nonlinearity_layer(x))
         for i in range(0, self.num_recurrent_layers, 2):
             x = self.recurrent_convolutional_layers[i](x)
             if i != self.num_recurrent_layers - 1:
                 x = self.recurrent_convolutional_layers[i+1](x)
-            x = self.dropout_layers[i//2](x)
         
-        x = nn.functional.max_pool3d(x, kernel_size=self.kernel_size, stride=1, padding=1)
         x = x.mean(dim=4, keepdim=True)
         x = x.flatten(start_dim=1)
         x = nn.functional.dropout(x, p=self.dropout_prob)

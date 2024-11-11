@@ -168,3 +168,8 @@ face_videos/
 
 .vscode/
 runs/
+
+FRAMES/
+AUGMENTED/
+
+*.zip

@@ -6,6 +6,7 @@ main_folder_path = os.path.dirname(__file__) + "/../.."
 sys.path.append(main_folder_path)
 import torch
 import torch.nn as nn
+import torchvision
 import datetime as dt
 import argparse
 import subprocess
@@ -15,7 +16,6 @@ import numpy as np
 import tempfile
 import pandas as pd
 
-from utils.dataset import VideoDataset
 from ray import tune, train
 from ray.train import Checkpoint, get_checkpoint
 from ray.tune.schedulers import ASHAScheduler
@@ -43,40 +43,45 @@ GPUS_PER_TRIAL = torch.cuda.device_count() if torch.cuda.is_available() else 0
 timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
 
+
 def train_model(
     config: dict,
     epochs: int,
+    include_validation: bool
 ):
     """
     Trains the model and saves the weights into a `.pt` file.
 
     Args:
-        epochs (int): Number of epochs.
-        filename (str): Filename to save the model to.
-        writer (SummaryWriter): Writer for logs.
         config (dict): Ray Tune dictionary.
+        epochs (int): Number of epochs to train the model.
+        include_validation (bool): Whether to include validation as training or not.
 
     Returns:
         None
     """
     writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor()
+    ])
 
-    train_dataset = VideoDataset(
-        root=f"{main_folder_path}/data/train", 
-        clip_len=config["steps"],
-        include_additional_transforms=config["include_additional_transforms"]
+    train_dataset = torchvision.datasets.ImageFolder(
+        root=f"{main_folder_path}/AUGMENTED/train_frames_augmneted",
+        transform=transform
     )
+
+    val_dataset = torchvision.datasets.ImageFolder(
+        root=f"{main_folder_path}/AUGMENTED/validation_frames_augmented",
+        transform=transform
+    )
+
     train_loader = DataLoader(
         dataset=train_dataset, 
         batch_size=int(config["batch_size"]),
-        num_workers=NUM_WORKERS
+        num_workers=NUM_WORKERS,
+        shuffle=True
     )
 
-    val_dataset = VideoDataset(
-        root=f"{main_folder_path}/data/validation", 
-        clip_len=config["steps"],
-        include_additional_transforms=config["include_additional_transforms"]
-    )
     val_loader = DataLoader(
         dataset=val_dataset, 
         batch_size=int(config["batch_size"]),
@@ -104,7 +109,7 @@ def train_model(
     print(device)
     model = model.to(device)
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -172,8 +177,7 @@ def train_model(
 
                 collected_labels, collected_predictions = [], []
 
-        model.eval()
-        with torch.no_grad():
+        if include_validation:
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
@@ -195,24 +199,48 @@ def train_model(
 
             print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}, Validation Accuracy score: {val_acc}")
             print(collected_labels, collected_predictions)
+        else:
+            model.eval()
+            with torch.no_grad():
+                collected_labels, collected_predictions = [], []
+                for i, vdata in enumerate(val_loader):
+                    vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                    output = model(vid_inputs)
+                    loss = loss_fn(output, labels)
+                    running_loss += loss.item()
 
-        avg_vloss = running_loss / (i + 1)
-        print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
+                    numpy_labels = labels.cpu().numpy().tolist()
+                    actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
 
-        writer.add_scalars("Training vs Validation Loss",
-                           {"Train": last_loss, "Validation": avg_vloss},
-                           epoch + 1)
-        writer.add_scalars("Training vs Validation F1 Score",
-                           {"Train": epoch_f1, "Validation": val_f1},
-                           epoch + 1)
+                    collected_labels.extend(numpy_labels)
+                    collected_predictions.extend(actual_predictions)
 
-        writer.add_scalars("Training vs Validation Accuracy Score",
-                           {"Train": epoch_acc, "Validation": val_acc},
-                           epoch + 1)
-        writer.flush()
+                collected_labels = np.array(collected_labels)
+                collected_predictions = np.array(collected_predictions)
 
-        if avg_vloss < best_vloss:
-            best_vloss = avg_vloss
+                val_f1 = f1_score(collected_labels, collected_predictions, average="weighted")
+                val_acc = accuracy_score(collected_labels, collected_predictions)
+
+                print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}, Validation Accuracy score: {val_acc}")
+                print(collected_labels, collected_predictions)
+
+            avg_vloss = running_loss / (i + 1)
+            print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
+
+            writer.add_scalars("Training vs Validation Loss",
+                            {"Train": last_loss, "Validation": avg_vloss},
+                            epoch + 1)
+            writer.add_scalars("Training vs Validation F1 Score",
+                            {"Train": epoch_f1, "Validation": val_f1},
+                            epoch + 1)
+
+            writer.add_scalars("Training vs Validation Accuracy Score",
+                            {"Train": epoch_acc, "Validation": val_acc},
+                            epoch + 1)
+            writer.flush()
+
+            if avg_vloss < best_vloss:
+                best_vloss = avg_vloss
 
 
         checkpoint_data = {
@@ -304,7 +332,8 @@ if __name__ == "__main__":
     result = tune.run(
         partial(
             train_model, 
-            epochs=3
+            epochs=1,
+            include_validation=False
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
@@ -348,7 +377,8 @@ if __name__ == "__main__":
     new_tuner = tune.Tuner(
         partial(
             train_model, 
-            epochs=10
+            epochs=10,
+            include_validation=True
         ),
         param_space=best_trial.config,
         tune_config=tune.TuneConfig(
@@ -368,3 +398,42 @@ if __name__ == "__main__":
 
     for value in dfs.values():
         value.to_csv(f"{main_folder_path}/models/cnn_lstm/best_result.csv", index=False)
+    
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor()
+    ])
+
+    test_dataset = torchvision.datasets.ImageFolder(
+        root=f"{main_folder_path}/FRAMES/test_frames",
+        transform=transform
+    )
+
+    test_dataloader = DataLoader(
+        dataset=test_dataset,
+        batch_size=1,
+        num_workers=NUM_WORKERS
+    )
+
+    collected_fnames = [os.path.basename(path) for path, _ in test_dataset.imgs]
+    collected_labels, collected_predictions = [], []
+    probs = []
+    for i, data in enumerate(test_dataloader):
+        vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+        output = best_trained_model(vid_inputs)
+
+        numpy_labels = labels.cpu().numpy().tolist()
+        actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+        prob = output.max(dim=1).cpu().numpy().tolist()
+
+        collected_labels.extend(numpy_labels)
+        collected_predictions.extend(actual_predictions)
+        probs.extend(prob)
+
+    df = pd.DataFrame({
+        "filename": collected_fnames,
+        "actual": collected_labels,
+        "predicted": collected_predictions,
+        "predicted_prob": prob
+    })
+    df.to_csv(f"{main_folder_path}/models/cnn_lstm/predictions_cnn_lstm_2d.csv")
+    print("Finished entire training regime")
