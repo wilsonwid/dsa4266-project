@@ -584,9 +584,7 @@ if __name__ == "__main__":
         ),
         param_space=best_cnn_result.config,
         tune_config=tune.TuneConfig(
-            num_workers=1,
             num_samples=1, 
-            use_gpu=True,
             resources_per_worker={
                 "CPU": os.cpu_count(),
                 "GPU": gpus_per_trial

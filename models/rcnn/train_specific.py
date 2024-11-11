@@ -272,18 +272,18 @@ if __name__ == "__main__":
     args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_recurrent_layers": tune.randint(1, 6),
-        "num_kernels": tune.randint(1, 64),
-        "kernel_size": tune.randint(1, 10),
+        "num_recurrent_layers": 4,
+        "num_kernels": 11,
+        "kernel_size": 6,
         "stride": 1,
         "padding": "same",
-        "dropout_prob": tune.uniform(0.1, 0.6),
-        "nonlinearity": tune.choice([NonlinearityEnum.SILU, NonlinearityEnum.RELU, NonlinearityEnum.GELU, NonlinearityEnum.ELU, NonlinearityEnum.LRELU]),
+        "dropout_prob": 0.1807,
+        "nonlinearity": NonlinearityEnum.SILU,
         "bias": False,
-        "steps": tune.choice([2 ** i for i in range(4, 7)]),
+        "steps": 64,
         "num_classes": NUM_CLASSES,
-        "batch_size": tune.choice([1, 2]),
-        "lr": tune.loguniform(1e-4, 1e-1),
+        "batch_size": 2,
+        "lr": 0.0001236517,
         "include_additional_transforms": False
     }
 
@@ -303,11 +303,11 @@ if __name__ == "__main__":
     result = tune.run(
         partial(
             train_model, 
-            epochs=1
+            epochs=10
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=5,
+        num_samples=1,
         scheduler=scheduler
     )
 
@@ -339,28 +339,6 @@ if __name__ == "__main__":
             best_checkpoint_data = pickle.load(fp)
 
         best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
-
-    new_tuner = tune.Tuner(
-        partial(
-            train_model,
-            epochs=10
-        ),
-        param_space=best_trial.config,
-        tune_config=tune.TuneConfig(
-            num_samples=1, 
-            resources_per_worker={
-                "CPU": os.cpu_count(),
-                "GPU": gpus_per_trial
-            }
-        )
-    )
-
-    new_results = new_tuner.fit()
-
-    dfs = {result.path: result.metrics_dataframe for result in new_results}
-
-    for value in dfs.values():
-        value.to_csv(f"{main_folder_path}/models/rcnn/best_result.csv", index=False)
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test",
