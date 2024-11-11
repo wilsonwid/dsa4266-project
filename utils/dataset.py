@@ -7,6 +7,7 @@ import numpy as np
 import cv2
 
 from torchvision.datasets.folder import make_dataset
+from torchvision.transforms import v2
 from typing import Optional
 from utils.utils import SEED
 from skimage import feature
@@ -32,7 +33,8 @@ class VideoDataset(torch.utils.data.IterableDataset):
             clip_len: int = 16,
             num_lbp_points: int = 16,
             lbp_radius: int = 1,
-            include_additional_transforms: bool = False
+            include_additional_transforms: bool = False,
+            random_transforms: v2.Compose = None
         ):
         super().__init__()
 
@@ -45,6 +47,7 @@ class VideoDataset(torch.utils.data.IterableDataset):
         self.num_lbp_points = num_lbp_points
         self.lbp_radius = lbp_radius
         self.include_additional_transforms = include_additional_transforms
+        self.random_transforms = random_transforms
     
     def __len__(self):
         return len(self.samples)
@@ -84,9 +87,11 @@ class VideoDataset(torch.utils.data.IterableDataset):
                     dct_feature_vector = torch.Tensor(dct / np.linalg.norm(dct)).unsqueeze(dim=0)
 
                     combined_frame = torch.cat([dft_feature_vector.type(torch.float32), dct_feature_vector.type(torch.float32), torch.Tensor(lbp).unsqueeze(dim=0).type(torch.float32), frame["data"].type(torch.float32)], dim=0)
-                else:
-                    combined_frame = frame["data"].type(torch.float32)
-                video_frames.append(combined_frame)
+                
+                combined_frame = frame["data"].type(torch.uint8)
+                if self.random_transforms:
+                    combined_frame = self.random_transforms(combined_frame)
+                video_frames.append(combined_frame.type(torch.float32))
                 current_pts = frame["pts"]
 
                 if len(video_frames) == self.clip_len:

@@ -26,6 +26,7 @@ from sklearn.metrics import f1_score, accuracy_score
 from pathlib import Path
 from functools import partial
 from utils.types import NonlinearityEnum
+from torchvision.transforms import v2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -59,10 +60,18 @@ def train_model(
     """
     writer = SummaryWriter(f"runs/rcnn_{timestamp}")
 
+    transforms = v2.Compose([
+        v2.RandomHorizontalFlip(p=0.5),
+        v2.ColorJitter(),
+        v2.GaussianBlur(kernel_size=3),
+        v2.RandomAdjustSharpness(1.5)
+    ])
+
     train_dataset = VideoDataset(
         root=f"{main_folder_path}/data/train", 
         clip_len=config["steps"],
-        include_additional_transforms=config["include_additional_transforms"]
+        include_additional_transforms=config["include_additional_transforms"],
+        random_transforms=transforms
     )
     train_loader = DataLoader(
         dataset=train_dataset, 
@@ -73,7 +82,8 @@ def train_model(
     val_dataset = VideoDataset(
         root=f"{main_folder_path}/data/validation", 
         clip_len=config["steps"],
-        include_additional_transforms=config["include_additional_transforms"]
+        include_additional_transforms=config["include_additional_transforms"],
+        random_transforms=transforms
     )
     val_loader = DataLoader(
         dataset=val_dataset, 
@@ -297,7 +307,7 @@ if __name__ == "__main__":
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=20,
+        num_samples=5,
         scheduler=scheduler
     )
 
@@ -353,3 +363,50 @@ if __name__ == "__main__":
 
     for value in dfs.values():
         value.to_csv(f"{main_folder_path}/models/rcnn/best_result.csv", index=False)
+
+    test_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/test",
+        epoch_size=None,
+    )
+
+    test_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/test", 
+        clip_len=best_trial.config["steps"],
+        include_additional_transforms=best_trial.config["include_additional_transforms"],
+        random_transforms=None
+    )
+
+    test_loader = DataLoader(
+        dataset=test_dataset, 
+        batch_size=int(best_trial.config["batch_size"]),
+        num_workers=NUM_WORKERS
+    )
+
+    collected_fnames = [os.path.basename(output["path"])[:-4] for output in test_dataset]
+
+    collected_labels, collected_predictions = [], []
+    probs = []
+
+    for i, data in enumerate(test_loader):
+        vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+        output = best_trained_model(vid_inputs)
+
+        numpy_labels = labels.cpu().numpy().tolist()
+        actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+        prob = output.max(dim=1).cpu().numpy().tolist()
+
+        collected_labels.extend(numpy_labels)
+        collected_predictions.extend(actual_predictions)
+        probs.extend(prob)
+
+    df = pd.DataFrame({
+        "filename": collected_fnames,
+        "actual": collected_labels,
+        "predicted": collected_predictions,
+        "probability": probs
+    })
+
+    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/predictions_{MODEL_NAME}.csv")
+
+    print("Finished entire training regime")
+

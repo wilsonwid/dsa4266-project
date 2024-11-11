@@ -6,7 +6,6 @@ main_folder_path = os.path.dirname(__file__) + "/../.."
 sys.path.append(main_folder_path)
 import torch
 import torch.nn as nn
-import torchvision
 import datetime as dt
 import argparse
 import subprocess
@@ -17,6 +16,7 @@ import tempfile
 import pandas as pd
 
 from ray import tune, train
+from utils.dataset import VideoDataset
 from ray.train import Checkpoint, get_checkpoint
 from ray.tune.schedulers import ASHAScheduler
 from models.cnn_lstm.cnn_lstm_2d import CNN_LSTM_2D
@@ -27,6 +27,7 @@ from sklearn.metrics import f1_score, accuracy_score
 from pathlib import Path
 from functools import partial
 from utils.types import NonlinearityEnum
+from torchvision.transforms import v2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,27 +62,33 @@ def train_model(
         None
     """
     writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor()
+
+    transforms = v2.Compose([
+        v2.RandomHorizontalFlip(p=0.5),
+        v2.ColorJitter(),
+        v2.GaussianBlur(kernel_size=3),
+        v2.RandomAdjustSharpness(1.5)
     ])
 
-    train_dataset = torchvision.datasets.ImageFolder(
-        root=f"{main_folder_path}/AUGMENTED/train_frames_augmneted",
-        transform=transform
-    )
-
-    val_dataset = torchvision.datasets.ImageFolder(
-        root=f"{main_folder_path}/AUGMENTED/validation_frames_augmented",
-        transform=transform
+    train_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/train", 
+        clip_len=config["steps"],
+        include_additional_transforms=config["include_additional_transforms"],
+        random_transforms=transforms
     )
 
     train_loader = DataLoader(
         dataset=train_dataset, 
         batch_size=int(config["batch_size"]),
-        num_workers=NUM_WORKERS,
-        shuffle=True
+        num_workers=NUM_WORKERS
     )
 
+    val_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/validation", 
+        clip_len=config["steps"],
+        include_additional_transforms=config["include_additional_transforms"],
+        random_transforms=transforms
+    )
     val_loader = DataLoader(
         dataset=val_dataset, 
         batch_size=int(config["batch_size"]),
@@ -109,7 +116,7 @@ def train_model(
     print(device)
     model = model.to(device)
 
-    loss_fn = nn.BCELoss()
+    loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -296,12 +303,12 @@ if __name__ == "__main__":
     args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_cnn_layers": tune.choice([i for i in range(1, 4)]),
+        "num_cnn_layers": tune.choice([i for i in range(1, 5)]),
         "num_start_kernels": tune.choice([2 ** i for i in range(4, 6)]),
         "kernel_size": tune.choice([2 * i for i in range(1, 6)]),
         "stride": 1,
         "padding": "same",
-        "dropout_prob": tune.choice(np.arange(start=0., stop=1., step=.05).tolist()),
+        "dropout_prob": tune.choice(np.arange(start=0., stop=0.5, step=.05).tolist()),
         "bias": False,
         "num_lstm_layers": tune.choice([i for i in range(3, 6)]),
         "hidden_size": tune.choice([2 ** i for i in range(1, 5)]),
@@ -309,7 +316,7 @@ if __name__ == "__main__":
         "bidirectional": tune.choice([True, False]),
         "input_shape": (224, 224),
         "batch_size": 2,
-        "lr": tune.sample_from(lambda spec: 10 ** (-10 * np.random.rand())),
+        "lr": tune.loguniform(1e-4, 1e-3),
         "steps": tune.choice([4 * i for i in range(25, 33)]),
         "nonlinearity": tune.choice([nl for nl in NonlinearityEnum]),
         "include_additional_transforms": False,
@@ -337,7 +344,7 @@ if __name__ == "__main__":
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=20,
+        num_samples=5,
         scheduler=scheduler
     )
 
@@ -399,25 +406,30 @@ if __name__ == "__main__":
     for value in dfs.values():
         value.to_csv(f"{main_folder_path}/models/cnn_lstm/best_result.csv", index=False)
     
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor()
-    ])
-
-    test_dataset = torchvision.datasets.ImageFolder(
-        root=f"{main_folder_path}/FRAMES/test_frames",
-        transform=transform
+    test_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/test",
+        epoch_size=None,
     )
 
-    test_dataloader = DataLoader(
-        dataset=test_dataset,
-        batch_size=1,
+    test_dataset = VideoDataset(
+        root=f"{main_folder_path}/data/test", 
+        clip_len=best_trial.config["steps"],
+        include_additional_transforms=best_trial.config["include_additional_transforms"],
+        random_transforms=None
+    )
+
+    test_loader = DataLoader(
+        dataset=test_dataset, 
+        batch_size=int(best_trial.config["batch_size"]),
         num_workers=NUM_WORKERS
     )
 
-    collected_fnames = [os.path.basename(path) for path, _ in test_dataset.imgs]
+    collected_fnames = [os.path.basename(output["path"])[:-4] for output in test_dataset]
+
     collected_labels, collected_predictions = [], []
     probs = []
-    for i, data in enumerate(test_dataloader):
+
+    for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
         output = best_trained_model(vid_inputs)
 
@@ -433,7 +445,9 @@ if __name__ == "__main__":
         "filename": collected_fnames,
         "actual": collected_labels,
         "predicted": collected_predictions,
-        "predicted_prob": prob
+        "probability": probs
     })
-    df.to_csv(f"{main_folder_path}/models/cnn_lstm/predictions_cnn_lstm_2d.csv")
+
+    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/predictions_{MODEL_NAME}_2d.csv")
+
     print("Finished entire training regime")
