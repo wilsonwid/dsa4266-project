@@ -18,7 +18,7 @@ from utils.dataset import VideoDataset
 from ray import tune, train
 from ray.train import Checkpoint, get_checkpoint
 from ray.tune.schedulers import ASHAScheduler
-from models.rcnn.rcnn import RecurrentConvolutionalNetwork
+from models.cnn_lstm.cnn_lstm_2d import CNN_LSTM_2D
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -30,10 +30,10 @@ from torchvision.transforms import v2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MODEL_NAME = "rcnn"
+MODEL_NAME = "cnn_lstm"
 NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
-SAVE_DIR = f"{main_folder_path}/models/rcnn/saved_models"
+SAVE_DIR = f"{main_folder_path}/models/cnn_lstm/saved_models"
 DATA_FOLDER = "data"
 INF = 100000000.
 NUM_WORKERS = 8
@@ -59,7 +59,7 @@ def train_model(
     Returns:
         None
     """
-    writer = SummaryWriter(f"runs/rcnn_{timestamp}")
+    writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
 
     transforms = v2.Compose([
         v2.RandomHorizontalFlip(p=0.5),
@@ -92,18 +92,22 @@ def train_model(
         num_workers=NUM_WORKERS
     )
 
-    model = RecurrentConvolutionalNetwork(
-        input_channels=config["input_channels"],
-        num_recurrent_layers=config["num_recurrent_layers"],
-        num_kernels=config["num_kernels"],
-        kernel_size=config["kernel_size"],
-        stride=config["stride"],
-        padding=config["padding"],
-        dropout_prob=config["dropout_prob"],
-        nonlinearity=config["nonlinearity"],
-        bias=config["bias"],
-        steps=config["steps"],
-        num_classes=config["num_classes"],
+    model = CNN_LSTM_2D(
+        input_channels=int(config["input_channels"]),
+        num_cnn_layers=int(config["num_cnn_layers"]),
+        num_start_kernels=int(config["num_start_kernels"]),
+        kernel_size=int(config["kernel_size"]),
+        stride=1,
+        padding="same",
+        dropout_prob=float(config["dropout_prob"]),
+        bias=False,
+        num_lstm_layers=int(config["num_lstm_layers"]),
+        hidden_size=int(config["hidden_size"]),
+        num_classes=NUM_CLASSES,
+        bidirectional=bool(config["bidirectional"]),
+        input_shape=(224, 224),
+        steps=int(config["steps"]),
+        nonlinearity=config["nonlinearity"]
     )
 
     print(device)
@@ -296,19 +300,23 @@ if __name__ == "__main__":
     args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_recurrent_layers": 4,
-        "num_kernels": 11,
+        "num_cnn_layers": 3,
+        "num_start_kernels": 16,
         "kernel_size": 6,
         "stride": 1,
         "padding": "same",
-        "dropout_prob": 0.1807,
-        "nonlinearity": NonlinearityEnum.SILU,
+        "dropout_prob": 0.05,
         "bias": False,
-        "steps": 64,
+        "num_lstm_layers": 3,
+        "hidden_size": 2,
         "num_classes": NUM_CLASSES,
+        "bidirectional": True,
+        "input_shape": (224, 224),
         "batch_size": 2,
-        "lr": 0.0001236517,
-        "include_additional_transforms": False
+        "lr": 0.00084796872,
+        "steps": 128,
+        "nonlinearity": NonlinearityEnum.RELU,
+        "include_additional_transforms": False,
     }
 
     gpus_per_trial = GPUS_PER_TRIAL
@@ -342,18 +350,22 @@ if __name__ == "__main__":
     print(f"Best trial final validation f1: {best_trial.last_result['f1']}")
     print(f"Best trial final validation acc: {best_trial.last_result['acc']}")
 
-    best_trained_model = RecurrentConvolutionalNetwork(
+    best_trained_model = CNN_LSTM_2D(
         input_channels=best_trial.config["input_channels"],
-        num_recurrent_layers=best_trial.config["num_recurrent_layers"],
-        num_kernels=best_trial.config["num_kernels"],
+        num_cnn_layers=best_trial.config["num_cnn_layers"],
+        num_start_kernels=best_trial.config["num_start_kernels"],
         kernel_size=best_trial.config["kernel_size"],
-        stride=best_trial.config["stride"],
-        padding=best_trial.config["padding"],
+        stride=1,
+        padding="same",
         dropout_prob=best_trial.config["dropout_prob"],
-        nonlinearity=best_trial.config["nonlinearity"],
-        bias=best_trial.config["bias"],
+        bias=False,
+        num_lstm_layers=best_trial.config["num_lstm_layers"],
+        hidden_size=best_trial.config["hidden_size"],
+        num_classes=NUM_CLASSES,
+        bidirectional=best_trial.config["bidirectional"],
+        input_shape=(224, 224),
         steps=best_trial.config["steps"],
-        num_classes=best_trial.config["num_classes"],
+        nonlinearity=best_trial.config["nonlinearity"]
     )
 
     best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="acc", mode="max")

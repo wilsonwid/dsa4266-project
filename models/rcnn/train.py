@@ -45,6 +45,7 @@ timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 def train_model(
     config: dict,
     epochs: int,
+    include_validation: bool
 ):
     """
     Trains the model and saves the weights into a `.pt` file.
@@ -176,8 +177,7 @@ def train_model(
 
                 collected_labels, collected_predictions = [], []
 
-        model.eval()
-        with torch.no_grad():
+        if include_validation:
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
@@ -199,6 +199,31 @@ def train_model(
 
             print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}, Validation Accuracy score: {val_acc}")
             print(collected_labels, collected_predictions)
+
+        else:
+            model.eval()
+            with torch.no_grad():
+                collected_labels, collected_predictions = [], []
+                for i, vdata in enumerate(val_loader):
+                    vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                    output = model(vid_inputs)
+                    loss = loss_fn(output, labels)
+                    running_loss += loss.item()
+
+                    numpy_labels = labels.cpu().numpy().tolist()
+                    actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+
+                    collected_labels.extend(numpy_labels)
+                    collected_predictions.extend(actual_predictions)
+
+                collected_labels = np.array(collected_labels)
+                collected_predictions = np.array(collected_predictions)
+
+                val_f1 = f1_score(collected_labels, collected_predictions, average="weighted")
+                val_acc = accuracy_score(collected_labels, collected_predictions)
+
+                print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}, Validation Accuracy score: {val_acc}")
+                print(collected_labels, collected_predictions)
 
         avg_vloss = running_loss / (i + 1)
         print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
@@ -303,7 +328,8 @@ if __name__ == "__main__":
     result = tune.run(
         partial(
             train_model, 
-            epochs=1
+            epochs=1,
+            include_validation=False
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
@@ -343,7 +369,8 @@ if __name__ == "__main__":
     new_tuner = tune.Tuner(
         partial(
             train_model,
-            epochs=10
+            epochs=10,
+            include_validation=True
         ),
         param_space=best_trial.config,
         tune_config=tune.TuneConfig(
