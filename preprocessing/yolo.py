@@ -8,7 +8,7 @@ from ultralytics import YOLO
 # Downloaded in preprocessing/
 
 model = YOLO("yolov11n-face.pt")
-input_path = "../data/balanced_dataset/"
+input_path = "data/balanced_dataset/"
 SCALE = 1.5
 
 
