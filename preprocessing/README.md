@@ -70,6 +70,9 @@
 
 ### Summary
 
+The full data flow pipeline is outlined:
+<img src="./Data%20flow%20pipeline.png" alt="Data Flow Pipeline" width="50%">
+
 #### Balanced Dataset Creation
 
 To address class imbalance in the DFDC dataset, we performed undersampling on the deepfake videos, retaining all real videos and randomly selecting a subset of deepfake videos to match the count of real videos.
