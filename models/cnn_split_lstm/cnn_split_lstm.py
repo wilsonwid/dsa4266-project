@@ -34,6 +34,8 @@ class ConvBlock(nn.Module):
             padding=self.padding,
             bias=self.bias
         )
+
+        
         self.bn1 = nn.BatchNorm2d(num_features=self.num_kernels)
         self.activation1 = self.nonlinearity
 
@@ -47,19 +49,9 @@ class ConvBlock(nn.Module):
         )
         self.bn2 = nn.BatchNorm2d(num_features=self.num_kernels * 2)
 
-        self.skip_conv = nn.Conv2d(
-            in_channels=self.num_kernels,
-            out_channels=self.num_kernels * 2,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=self.bias
-        )
         self.last_activation = self.nonlinearity
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x_skip = x
-
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.activation1(x)
@@ -67,8 +59,6 @@ class ConvBlock(nn.Module):
         x = self.conv2(x)
         x = self.bn2(x)
 
-        x_skip = self.skip_conv(x_skip)        
-        x += x_skip
         x = self.last_activation(x)
         return x
 
@@ -118,17 +108,9 @@ class CNN_Section(nn.Module):
 
         self.image_size_after_activation = compute_linear_size_n(
             input_shape=self.input_shape[0], 
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            n=1
-        )
-
-        self.step_size_after_activation = compute_linear_size_n(
-            input_shape=self.steps,
-            kernel_size=3,
-            stride=1,
-            padding=1,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
             n=1
         )
 
@@ -151,7 +133,7 @@ class CNN_Section(nn.Module):
             n=2 * self.num_cnn_layers
         )
 
-        self.fc1 = nn.Linear(self.image_size_aft_conv * self.image_size_aft_conv * self.num_start_kernels * 2 ** self.num_cnn_layers, self.image_size_aft_conv ** 2)
+        self.fc1 = nn.Linear(self.image_size_aft_conv ** 2 * self.num_start_kernels * 2 ** self.num_cnn_layers, self.image_size_aft_conv ** 2)
         self.activation1 = select_nonlinearity(nonlinearity)
         self.dropout1 = nn.Dropout(self.dropout_prob)
 
@@ -159,7 +141,7 @@ class CNN_Section(nn.Module):
         self.activation2 = select_nonlinearity(nonlinearity)
         self.dropout2 = nn.Dropout(self.dropout_prob)
 
-        self.fc3 = nn.Linear(self.image_size_aft_conv, self.num_classes)
+        self.fc3 = nn.Linear(self.image_size_aft_conv, 2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.input_conv(x)
@@ -179,6 +161,7 @@ class CNN_Section(nn.Module):
             x = self.activation2(x)
             x = self.dropout2(x)
             x = self.fc3(x)
+            x = torch.softmax(x, dim=1)
         
         return x
             

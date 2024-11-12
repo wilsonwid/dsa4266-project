@@ -65,7 +65,7 @@ def train_model(
         v2.RandomHorizontalFlip(p=0.5),
         v2.ColorJitter(),
         v2.GaussianBlur(kernel_size=3),
-        v2.RandomAdjustSharpness(1.5)
+        v2.RandomAdjustSharpness(1.5),
     ])
 
     train_dataset = VideoDataset(
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_cnn_layers": 3,
+        "num_cnn_layers": 2,
         "num_start_kernels": 16,
         "kernel_size": 6,
         "stride": 1,
@@ -314,7 +314,7 @@ if __name__ == "__main__":
         "input_shape": (224, 224),
         "batch_size": 2,
         "lr": 0.00084796872,
-        "steps": 128,
+        "steps": 64,
         "nonlinearity": NonlinearityEnum.RELU,
         "include_additional_transforms": False,
     }
@@ -400,13 +400,15 @@ if __name__ == "__main__":
     collected_labels, collected_predictions = [], []
     probs = []
 
+    best_trained_model = best_trained_model.to(device)
+
     for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
         output = best_trained_model(vid_inputs)
 
         numpy_labels = labels.cpu().numpy().tolist()
         actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
-        prob = output.max(dim=1).cpu().numpy().tolist()
+        prob = output.max(dim=1).values.cpu().numpy().tolist()
 
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)

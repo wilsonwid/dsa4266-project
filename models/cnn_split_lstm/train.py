@@ -57,7 +57,8 @@ def train_cnn_model(
         v2.RandomHorizontalFlip(p=0.5),
         v2.ColorJitter(),
         v2.GaussianBlur(kernel_size=3),
-        v2.RandomAdjustSharpness(1.5)
+        v2.RandomAdjustSharpness(1.5),
+        v2.ToTensor()
     ])
 
     train_dataset = ImageFolder(f"{main_folder_path}/AUGMENTED/train_frames_augmented", transform=transforms)
@@ -65,16 +66,25 @@ def train_cnn_model(
     train_loader = DataLoader(
         dataset=train_dataset, 
         batch_size=int(config["batch_size"]),
-        num_workers=NUM_WORKERS
+        num_workers=NUM_WORKERS,
+        shuffle=True
     )
 
     val_dataset = ImageFolder(f"{main_folder_path}/AUGMENTED/validation_frames_augmented")
 
-    val_loader = DataLoader(
-        dataset=val_dataset, 
-        batch_size=int(config["batch_size"]),
-        num_workers=NUM_WORKERS
-    )
+    if include_validation:
+        val_loader = DataLoader(
+            dataset=val_dataset, 
+            batch_size=int(config["batch_size"]),
+            num_workers=NUM_WORKERS,
+            shuffle=True
+        )
+    else:
+        val_loader = DataLoader(
+            dataset=val_dataset, 
+            batch_size=int(config["batch_size"]),
+            num_workers=NUM_WORKERS,
+        )   
 
     if not trained_model:
         model = CNN_Section(
@@ -125,7 +135,7 @@ def train_cnn_model(
         model.train()
         collected_labels, collected_predictions = [], []
         for i, data in tqdm(enumerate(train_loader)):
-            subprocess.run(["nvidia-smi"])
+            # subprocess.run(["nvidia-smi"])
             vid_inputs, labels = data 
 
             optimizer.zero_grad()
@@ -349,7 +359,7 @@ def train_model(
         model.train()
         collected_labels, collected_predictions = [], []
         for i, data in tqdm(enumerate(train_loader)):
-            subprocess.run(["nvidia-smi"])
+            # subprocess.run(["nvidia-smi"])
             vid_inputs, labels = data["video"].to(device), data["target"].to(device)
 
             optimizer.zero_grad()
@@ -518,7 +528,7 @@ if __name__ == "__main__":
         "num_classes": NUM_CLASSES,
         "input_shape": (224, 224),
         "batch_size": 2,
-        "lr": tune.loguniform(1e-4, 1e-3),
+        "lr": tune.loguniform(1e-2, 1e-1),
         "steps": tune.choice([4 * i for i in range(25, 33)]),
         "nonlinearity": tune.choice([nl for nl in NonlinearityEnum]),
         "include_additional_transforms": False,

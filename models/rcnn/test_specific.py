@@ -293,7 +293,6 @@ def get_arguments() -> argparse.Namespace:
     return parser.parse_args()
     
 if __name__ == "__main__":
-    args = get_arguments()
     search_space = {
         "input_channels": 3,
         "num_recurrent_layers": 4,
@@ -313,59 +312,25 @@ if __name__ == "__main__":
 
     gpus_per_trial = GPUS_PER_TRIAL
 
-    scheduler = ASHAScheduler(
-        time_attr="training_iteration",
-        metric="acc",
-        mode="max",
-        max_t=args.epochs,
-        grace_period=1,
-        reduction_factor=2
-    )
-
-    print("Running Ray Tune...")
-
-    result = tune.run(
-        partial(
-            train_model, 
-            epochs=10,
-            include_validation=True
-        ),
-        resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
-        config=search_space,
-        num_samples=1,
-        scheduler=scheduler
-    )
-
-    best_trial = result.get_best_trial("acc", "max", "last")
-    print(f"Best trial config: {best_trial.config}")
-    print(f"Best trial final validation loss: {best_trial.last_result['loss']}")
-    print(f"Best trial final validation f1: {best_trial.last_result['f1']}")
-    print(f"Best trial final validation acc: {best_trial.last_result['acc']}")
-
     best_trained_model = RecurrentConvolutionalNetwork(
-        input_channels=best_trial.config["input_channels"],
-        num_recurrent_layers=best_trial.config["num_recurrent_layers"],
-        num_kernels=best_trial.config["num_kernels"],
-        kernel_size=best_trial.config["kernel_size"],
-        stride=best_trial.config["stride"],
-        padding=best_trial.config["padding"],
-        dropout_prob=best_trial.config["dropout_prob"],
-        nonlinearity=best_trial.config["nonlinearity"],
-        bias=best_trial.config["bias"],
-        steps=best_trial.config["steps"],
-        num_classes=best_trial.config["num_classes"],
+        input_channels=search_space["input_channels"],
+        num_recurrent_layers=search_space["num_recurrent_layers"],
+        num_kernels=search_space["num_kernels"],
+        kernel_size=search_space["kernel_size"],
+        stride=search_space["stride"],
+        padding=search_space["padding"],
+        dropout_prob=search_space["dropout_prob"],
+        nonlinearity=search_space["nonlinearity"],
+        bias=search_space["bias"],
+        steps=search_space["steps"],
+        num_classes=search_space["num_classes"],
     )
 
-    best_trained_model = best_trained_model.to(device)
+    weights_dir = "/home/w/wilsonwi/ray_results/train_model_2024-11-11_20-06-40/train_model_689c8_00000_0_2024-11-11_20-06-40"
 
-    best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="acc", mode="max")
-
-    with best_checkpoint.as_directory() as checkpoint_dir:
-        data_path = Path(checkpoint_dir) / "data.pkl"
-        with open(data_path, "rb") as fp:
-            best_checkpoint_data = pickle.load(fp)
-
-        best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
+    with open(f"{weights_dir}/checkpoint_000009/data.pkl", "rb") as f:
+        result = pickle.load(f)
+        best_trained_model.load_state_dict(result["net_state_dict"])
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test",
@@ -374,14 +339,14 @@ if __name__ == "__main__":
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test", 
-        clip_len=best_trial.config["steps"],
-        include_additional_transforms=best_trial.config["include_additional_transforms"],
+        clip_len=search_space["steps"],
+        include_additional_transforms=search_space["include_additional_transforms"],
         random_transforms=None
     )
 
     test_loader = DataLoader(
         dataset=test_dataset, 
-        batch_size=int(best_trial.config["batch_size"]),
+        batch_size=int(search_space["batch_size"]),
         num_workers=NUM_WORKERS
     )
 
@@ -390,13 +355,15 @@ if __name__ == "__main__":
     collected_labels, collected_predictions = [], []
     probs = []
 
+    best_trained_model = best_trained_model.to(device)
+
     for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
         output = best_trained_model(vid_inputs)
 
         numpy_labels = labels.cpu().numpy().tolist()
         actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
-        prob = output.max(dim=1).detach().cpu().numpy().tolist()
+        prob = output.max(dim=1).values.detach().cpu().numpy().tolist()
 
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)

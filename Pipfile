@@ -26,6 +26,7 @@ av = "*"
 transformers = "*"
 torch = "*"
 ray = {extras = ["serve", "train", "tune", "data"], version = "*"}
+openpyxl = "*"
 
 [dev-packages]
 tqdm = "*"
