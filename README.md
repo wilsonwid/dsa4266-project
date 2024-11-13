@@ -33,6 +33,11 @@ Repository for DSA4266 project.
 This project aims to use different models in order to predict whether a given video is a deepfake. In this project, we use
 several different models, such as the Recurrent-CNN and the Vision Transformer, in order to achieve the aforementioned goal.
 
+# Model Repositories
+- [CNN Model](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
+- [Resnet Model](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
+- [VideoMAE](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
+
 # Repository structure
 
 # Team members
@@ -45,3 +50,4 @@ In alphabetical order:
 1. Sum Hung Yee
 1. Tan Hui Xuan Valerie
 1. Wilson Widyadhana
+
