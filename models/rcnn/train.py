@@ -376,21 +376,14 @@ if __name__ == "__main__":
     new_tuner = tune.run(
         partial(
             train_model, 
-            epochs=1,
-            include_validation=False
+            epochs=10,
+            include_validation=True
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=search_space,
-        num_samples=5,
+        num_samples=1,
         scheduler=scheduler
     )
-
-    new_results = new_tuner.fit()
-
-    dfs = {result.path: result.metrics_dataframe for result in new_results}
-
-    for value in dfs.values():
-        value.to_csv(f"{main_folder_path}/models/rcnn/best_result.csv", index=False)
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test",
@@ -417,11 +410,12 @@ if __name__ == "__main__":
 
     for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+        labels = labels.type(torch.float32).unsqueeze(dim=1)
         output = best_trained_model(vid_inputs)
 
         numpy_labels = labels.cpu().numpy().tolist()
-        actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
-        prob = output.max(dim=1).cpu().numpy().tolist()
+        actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
+        prob = output.detach().cpu().numpy().tolist()
 
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)

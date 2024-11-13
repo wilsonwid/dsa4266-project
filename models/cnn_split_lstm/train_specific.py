@@ -679,11 +679,12 @@ if __name__ == "__main__":
 
     for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+        labels = labels.type(torch.float32).unsqueeze(dim=1)
         output = best_trained_model(vid_inputs)
 
         numpy_labels = labels.cpu().numpy().tolist()
-        actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
-        prob = output.max(dim=1).cpu().numpy().tolist()
+        actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
+        prob = output.detach().cpu().numpy().tolist()
 
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)
