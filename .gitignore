@@ -165,6 +165,17 @@ cython_debug/
 /data/*
 !/data/.gitkeep
 
+# extracted faces
+face_videos/
+
+.vscode/
+runs/
+
+FRAMES/
+AUGMENTED/
+
+*.zip
+*.tar
 #DS_store
 .DS_Store
 
