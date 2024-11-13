@@ -36,7 +36,7 @@ The objective of this project is to develop several machine learning models capa
    - [CNN Model Repository](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
 - Residual Networks (**ResNet**)
    - [Resnet Model Repository](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
-- Region-based CNNs (**RCNN**)
+- Recurrent CNNs (**RCNN**)
 - CNN-Encoder + Long Short Term Memory (**CNN-Encoder + LSTM**)
 - Video Masked Autoencoders (**VideoMAE**)
    - [VideoMAE Model Repository](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
