@@ -30,12 +30,11 @@ class ConvBlock(nn.Module):
             in_channels=self.num_kernels,
             out_channels=self.num_kernels,
             kernel_size=self.kernel_size,
-            stride=self.stride,
+            stride=1,
             padding=self.padding,
             bias=self.bias
         )
 
-        
         self.bn1 = nn.BatchNorm2d(num_features=self.num_kernels)
         self.activation1 = self.nonlinearity
 
@@ -43,13 +42,15 @@ class ConvBlock(nn.Module):
             in_channels=self.num_kernels,
             out_channels=self.num_kernels * 2,
             kernel_size=self.kernel_size,
-            stride=self.stride,
+            stride=1,
             padding=self.padding,
             bias=self.bias
         )
         self.bn2 = nn.BatchNorm2d(num_features=self.num_kernels * 2)
 
         self.last_activation = self.nonlinearity
+
+        self.pooling = nn.MaxPool2d(kernel_size=self.kernel_size, stride=2, padding=0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
@@ -60,6 +61,8 @@ class ConvBlock(nn.Module):
         x = self.bn2(x)
 
         x = self.last_activation(x)
+        
+        x = self.pooling(x)
         return x
 
 class CNN_Section(nn.Module):
@@ -106,13 +109,15 @@ class CNN_Section(nn.Module):
         self.activation = select_nonlinearity(self.nonlinearity)
         self.max_pool = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
 
-        self.image_size_after_activation = compute_linear_size_n(
-            input_shape=self.input_shape[0], 
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-            n=1
-        )
+        block = lambda x: compute_linear_size_n(x, self.kernel_size, 1, self.padding, 2)
+        pooling = lambda x: compute_linear_size_n(x, self.kernel_size, 2, 0, 1)
+        layer = lambda x: pooling(block(x))
+
+        self.image_size_aft_conv = compute_linear_size_n(self.input_shape[0], self.kernel_size, self.stride, self.padding, 1)
+
+        for _ in range(self.num_cnn_layers):
+            self.image_size_aft_conv = layer(self.image_size_aft_conv)
+        
 
         self.conv_blocks = nn.ModuleList([
             ConvBlock(
@@ -125,15 +130,9 @@ class CNN_Section(nn.Module):
             )
         for i in range(self.num_cnn_layers)])
 
-        self.image_size_aft_conv = compute_linear_size_n(
-            input_shape=self.image_size_after_activation,
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-            n=2 * self.num_cnn_layers
-        )
+        print(self.image_size_aft_conv)
 
-        self.fc1 = nn.Linear(self.image_size_aft_conv ** 2 * self.num_start_kernels * 2 ** self.num_cnn_layers, self.image_size_aft_conv ** 2)
+        self.fc1 = nn.Linear((self.image_size_aft_conv ** 2) * self.num_start_kernels * 2 ** self.num_cnn_layers, self.image_size_aft_conv ** 2)
         self.activation1 = select_nonlinearity(nonlinearity)
         self.dropout1 = nn.Dropout(self.dropout_prob)
 
@@ -141,7 +140,7 @@ class CNN_Section(nn.Module):
         self.activation2 = select_nonlinearity(nonlinearity)
         self.dropout2 = nn.Dropout(self.dropout_prob)
 
-        self.fc3 = nn.Linear(self.image_size_aft_conv, 2)
+        self.fc3 = nn.Linear(self.image_size_aft_conv, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.input_conv(x)
@@ -161,7 +160,7 @@ class CNN_Section(nn.Module):
             x = self.activation2(x)
             x = self.dropout2(x)
             x = self.fc3(x)
-            x = torch.softmax(x, dim=1)
+            x = torch.sigmoid(x)
         
         return x
             
@@ -215,9 +214,7 @@ class CNN_LSTM_Separate(nn.Module):
         self.activation1 = select_nonlinearity(self.nonlinearity)
         self.dropout1 = nn.Dropout(self.dropout_prob)
 
-        self.fc2 = nn.Linear(64, self.num_classes)
-        self.softmax = nn.Softmax(dim=1)
-
+        self.fc2 = nn.Linear(64, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.permute(0, 2, 1, 3, 4)
@@ -228,14 +225,14 @@ class CNN_LSTM_Separate(nn.Module):
             collected.append(cur)
 
         x = torch.stack(collected, dim=2)
-
         # now x will be of dimension (batch_size, steps, self.cnn_section.image_size_aft_conv ** 2)
 
+        x = x.permute(0, 2, 1)
         (x, _) = self.lstm(x)
         x = x.flatten(start_dim=1)
         x = self.fc1(x)
         x = self.activation1(x)
         x = self.dropout1(x)
         x = self.fc2(x)
-        x = self.softmax(x)
+        x = torch.sigmoid(x)
         return x

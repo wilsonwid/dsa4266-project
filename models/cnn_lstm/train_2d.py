@@ -116,7 +116,7 @@ def train_model(
     print(device)
     model = model.to(device)
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -146,7 +146,7 @@ def train_model(
         for i, data in tqdm(enumerate(train_loader)):
             subprocess.run(["nvidia-smi"])
             vid_inputs, labels = data["video"].to(device), data["target"].to(device)
-
+            labels = labels.type(torch.float32).unsqueeze(dim=1)
             optimizer.zero_grad()
             output = model(vid_inputs)
             loss = loss_fn(output, labels)
@@ -156,7 +156,7 @@ def train_model(
             running_loss += loss.item()
 
             numpy_labels = labels.cpu().numpy().tolist()
-            actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+            actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
 
             collected_labels.extend(numpy_labels)
             collected_predictions.extend(actual_predictions)
@@ -188,12 +188,13 @@ def train_model(
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                labels = labels.type(torch.float32).unsqueeze(dim=1)
                 output = model(vid_inputs)
                 loss = loss_fn(output, labels)
                 running_loss += loss.item()
 
                 numpy_labels = labels.cpu().numpy().tolist()
-                actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
 
                 collected_labels.extend(numpy_labels)
                 collected_predictions.extend(actual_predictions)
@@ -212,12 +213,13 @@ def train_model(
                 collected_labels, collected_predictions = [], []
                 for i, vdata in enumerate(val_loader):
                     vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                    labels = labels.type(torch.float32).unsqueeze(dim=1)
                     output = model(vid_inputs)
                     loss = loss_fn(output, labels)
                     running_loss += loss.item()
 
                     numpy_labels = labels.cpu().numpy().tolist()
-                    actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                    actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
 
                     collected_labels.extend(numpy_labels)
                     collected_predictions.extend(actual_predictions)
@@ -263,11 +265,13 @@ def train_model(
             
             checkpoint = Checkpoint.from_directory(checkpoint_dir)
             train.report({
-                "loss": avg_vloss,
-                "f1": val_f1,
-                "acc": val_acc
+                "val_loss": avg_vloss,
+                "val_f1": val_f1,
+                "val_acc": val_acc,
+                "train_loss": last_loss,
+                "train_f1": epoch_f1,
+                "train_acc": epoch_acc
             }, checkpoint=checkpoint)
-    
     print("Finished training")
 
 def get_arguments() -> argparse.Namespace:
@@ -315,7 +319,7 @@ if __name__ == "__main__":
         "num_classes": NUM_CLASSES,
         "bidirectional": tune.choice([True, False]),
         "input_shape": (224, 224),
-        "batch_size": 2,
+        "batch_size": 1,
         "lr": tune.loguniform(1e-4, 1e-3),
         "steps": tune.choice([4 * i for i in range(25, 33)]),
         "nonlinearity": tune.choice([nl for nl in NonlinearityEnum]),
@@ -326,7 +330,7 @@ if __name__ == "__main__":
 
     scheduler = ASHAScheduler(
         time_attr="training_iteration",
-        metric="acc",
+        metric="val_acc",
         mode="max",
         max_t=args.epochs,
         grace_period=1,
@@ -348,11 +352,11 @@ if __name__ == "__main__":
         scheduler=scheduler
     )
 
-    best_trial = result.get_best_trial("acc", "max", "last")
+    best_trial = result.get_best_trial("val_acc", "max", "last")
     print(f"Best trial config: {best_trial.config}")
-    print(f"Best trial final validation loss: {best_trial.last_result['loss']}")
-    print(f"Best trial final validation f1: {best_trial.last_result['f1']}")
-    print(f"Best trial final validation acc: {best_trial.last_result['acc']}")
+    print(f"Best trial final validation loss: {best_trial.last_result['val_loss']}")
+    print(f"Best trial final validation f1: {best_trial.last_result['val_f1']}")
+    print(f"Best trial final validation acc: {best_trial.last_result['val_acc']}")
 
     best_trained_model = CNN_LSTM_2D(
         input_channels=best_trial.config["input_channels"],
@@ -372,7 +376,7 @@ if __name__ == "__main__":
         nonlinearity=best_trial.config["nonlinearity"]
     )
 
-    best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="acc", mode="max")
+    best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="val_acc", mode="max")
 
     with best_checkpoint.as_directory() as checkpoint_dir:
         data_path = Path(checkpoint_dir) / "data.pkl"
@@ -406,10 +410,6 @@ if __name__ == "__main__":
     for value in dfs.values():
         value.to_csv(f"{main_folder_path}/models/cnn_lstm/best_result.csv", index=False)
     
-    test_dataset = VideoDataset(
-        root=f"{main_folder_path}/data/test",
-        epoch_size=None,
-    )
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test", 

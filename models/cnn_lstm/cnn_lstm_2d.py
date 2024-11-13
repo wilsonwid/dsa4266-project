@@ -168,9 +168,7 @@ class CNN_LSTM_2D(nn.Module):
         self.activation1 = select_nonlinearity(self.nonlinearity)
         self.dropout1 = nn.Dropout(self.dropout_prob)
 
-        self.fc2 = nn.Linear(64, self.num_classes)
-        self.softmax = nn.Softmax(dim=1)
-
+        self.fc2 = nn.Linear(64, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.permute(0, 2, 1, 3, 4)
@@ -197,5 +195,5 @@ class CNN_LSTM_2D(nn.Module):
         x = self.activation1(x)
         x = self.dropout1(x)
         x = self.fc2(x)
-        x = self.softmax(x)
+        x = torch.sigmoid(x)
         return x

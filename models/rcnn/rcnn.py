@@ -141,9 +141,7 @@ class RecurrentConvolutionalNetwork(nn.Module):
         self.dropout1 = nn.Dropout(p=self.dropout_prob)
         self.activation1 = select_nonlinearity(self.nonlinearity)
 
-        self.fc2 = nn.Linear(64, self.num_classes)
-
-        self.softmax = nn.Softmax(dim=1)
+        self.fc2 = nn.Linear(64, 1)
 
         for module in self.modules():
             if isinstance(module, nn.Conv3d):
@@ -166,5 +164,5 @@ class RecurrentConvolutionalNetwork(nn.Module):
         x = self.activation1(x)
         x = self.dropout1(x)
         x = self.fc2(x)
-        x = self.softmax(x)
+        x = torch.sigmoid(x)
         return x

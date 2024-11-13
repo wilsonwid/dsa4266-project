@@ -10,6 +10,7 @@ import datetime as dt
 import argparse
 import subprocess
 import ray.cloudpickle as pickle
+import ray
 
 import numpy as np
 import tempfile
@@ -292,6 +293,7 @@ def train_model(
     Returns:
         None
     """
+    cnn_model = ray.get(cnn_model)
     writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
 
     transforms = v2.Compose([
@@ -344,7 +346,7 @@ def train_model(
     print(device)
     model = model.to(device)
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -374,7 +376,7 @@ def train_model(
         for i, data in tqdm(enumerate(train_loader)):
             # subprocess.run(["nvidia-smi"])
             vid_inputs, labels = data["video"].to(device), data["target"].to(device)
-
+            labels = labels.type(torch.float32).unsqueeze(dim=1)
             optimizer.zero_grad()
             output = model(vid_inputs)
             loss = loss_fn(output, labels)
@@ -384,7 +386,7 @@ def train_model(
             running_loss += loss.item()
 
             numpy_labels = labels.cpu().numpy().tolist()
-            actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+            actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
 
             collected_labels.extend(numpy_labels)
             collected_predictions.extend(actual_predictions)
@@ -414,12 +416,13 @@ def train_model(
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                labels = labels.type(torch.float32).unsqueeze(dim=1)
                 output = model(vid_inputs)
                 loss = loss_fn(output, labels)
                 running_loss += loss.item()
 
                 numpy_labels = labels.cpu().numpy().tolist()
-                actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
 
                 collected_labels.extend(numpy_labels)
                 collected_predictions.extend(actual_predictions)
@@ -437,12 +440,13 @@ def train_model(
                 collected_labels, collected_predictions = [], []
                 for i, vdata in enumerate(val_loader):
                     vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                    labels = labels.type(torch.float32).unsqueeze(dim=1)
                     output = model(vid_inputs)
                     loss = loss_fn(output, labels)
                     running_loss += loss.item()
 
                     numpy_labels = labels.cpu().numpy().tolist()
-                    actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                    actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()    
 
                     collected_labels.extend(numpy_labels)
                     collected_predictions.extend(actual_predictions)
@@ -528,24 +532,38 @@ def get_arguments() -> argparse.Namespace:
     return parser.parse_args()
     
 if __name__ == "__main__":
-    args = get_arguments()
     cnn_search_space = {
         "input_channels": 3,
-        "num_cnn_layers": tune.choice([i for i in range(3, 7)]),
-        "num_start_kernels": tune.choice([2 ** i for i in range(4, 5)]),
-        "kernel_size": tune.choice([i for i in range(3, 5)]),
-        "stride": tune.choice([1, 2]),
-        "padding": tune.choice([4, 5, 6]),
-        "dropout_prob": tune.choice(np.arange(start=0., stop=0.25, step=.05).tolist()),
+        "num_cnn_layers": 3,
+        "num_start_kernels": 16,
+        "kernel_size": 4,
+        "stride": 2,
+        "padding": 5,
+        "dropout_prob": 0.05,
         "bias": False,
         "num_classes": NUM_CLASSES,
         "input_shape": (224, 224),
         "batch_size": 64,
-        "lr": tune.loguniform(1e-4, 1e-3),
-        "steps": tune.choice([4 * i for i in range(25, 50)]),
-        "nonlinearity": tune.choice([nl for nl in NonlinearityEnum]),
+        "lr": 0.00137748,
+        "steps": 120,
+        "nonlinearity": NonlinearityEnum.SILU,
         "include_additional_transforms": False,
     }
+
+    cur_model = CNN_Section(
+        input_channels=3,
+        num_cnn_layers=3, 
+        num_start_kernels=16,
+        kernel_size=4,
+        stride=2,
+        padding=5,
+        dropout_prob=0.05,
+        bias=False,
+        num_classes=NUM_CLASSES,
+        input_shape=(224, 224),
+        nonlinearity=NonlinearityEnum.SILU,
+        train_alone=False
+    )
 
     gpus_per_trial = GPUS_PER_TRIAL
 
@@ -553,69 +571,15 @@ if __name__ == "__main__":
         time_attr="training_iteration",
         metric="val_acc",
         mode="max",
-        max_t=args.epochs,
+        max_t=10,
         grace_period=1,
         reduction_factor=2
     )
-    gpus_per_trial = GPUS_PER_TRIAL
+    directory = "/home/wilsonwid/ray_results/train_cnn_model_2024-11-13_00-32-51/train_cnn_model_c2cf0_00002_2_dropout_prob=0.0500,kernel_size=4,lr=0.0001,nonlinearity=ref_ph_2fdecf16,num_cnn_layers=3,num_start__2024-11-13_00-32-51/checkpoint_000001"
 
-    print("Running Ray Tune...")
-
-    cnn_result = tune.run(
-        partial(
-            train_cnn_model, 
-            epochs=2,
-            include_validation=False
-        ),
-        resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
-        config=cnn_search_space,
-        num_samples=5,
-        scheduler=scheduler
-    )
-
-    best_cnn_result = cnn_result.get_best_trial("val_acc", "max", "last")
-    cur_model = CNN_Section(
-        input_channels=best_cnn_result.config["input_channels"],
-        num_cnn_layers=best_cnn_result.config["num_cnn_layers"],
-        num_start_kernels=best_cnn_result.config["num_start_kernels"],
-        kernel_size=best_cnn_result.config["kernel_size"],
-        stride=best_cnn_result.config["stride"],
-        padding=best_cnn_result.config["padding"],
-        dropout_prob=best_cnn_result.config["dropout_prob"],
-        bias=False,
-        num_classes=NUM_CLASSES,
-        input_shape=(224, 224),
-        nonlinearity=best_cnn_result.config["nonlinearity"],
-        train_alone=False
-    )
-    
-    best_cnn_checkpoint = best_cnn_result.get_best_checkpoint(trial=best_cnn_result, metric="val_acc", mode="max")
-
-    with best_cnn_checkpoint.as_directory() as checkpoint_dir:
-        data_path = Path(checkpoint_dir) / "data.pkl"
-        with open(data_path, "rb") as fp:
-            best_checkpoint_data = pickle.load(fp)
-
-        cur_model.load_state_dict(best_checkpoint_data["net_state_dict"])
-    
-    cnn_tuner = tune.Tuner(
-        partial(
-            train_cnn_model, 
-            epochs=10,
-            include_validation=True,
-            trained_model=cur_model
-        ),
-        param_space=best_cnn_result.config,
-        tune_config=tune.TuneConfig(
-            num_samples=1, 
-            resources_per_worker={
-                "CPU": os.cpu_count(),
-                "GPU": gpus_per_trial
-            }
-        )
-    )
-
-    trained_cnn_result = cnn_tuner.fit()
+    with open(f"{directory}/data.pkl", "rb") as f:
+        checkpoint_data = pickle.load(f)
+        cur_model.load_state_dict(checkpoint_data["net_state_dict"])
 
     lstm_search_space = {
         "num_lstm_layers": tune.choice([i for i in range(3, 6)]),
@@ -628,16 +592,18 @@ if __name__ == "__main__":
         "input_shape": (224, 224),
         "batch_size": 2,
         "lr": tune.loguniform(1e-4, 1e-3),
-        "nonlinearity": best_cnn_result.config["nonlinearity"],
+        "nonlinearity": NonlinearityEnum.SILU,
         "include_additional_transforms": False,
     }
+
+    cur_model_id = ray.put(cur_model)
 
     result = tune.run(
         partial(
             train_model, 
             epochs=1,
             include_validation=False,
-            cnn_model=cur_model
+            cnn_model=cur_model_id
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
         config=lstm_search_space,
@@ -672,24 +638,17 @@ if __name__ == "__main__":
 
         best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
 
-    new_tuner = tune.Tuner(
+    new_tuner = tune.run(
         partial(
             train_model, 
             epochs=10,
             include_validation=True,
-            cnn_model=cur_model,
-            trained_model=best_trained_model
+            cnn_model=cur_model_id
         ),
-        param_space=best_trial.config,
-        tune_config=tune.TuneConfig(
-            num_workers=1,
-            num_samples=1, 
-            use_gpu=True,
-            resources_per_worker={
-                "CPU": os.cpu_count(),
-                "GPU": gpus_per_trial
-            }
-        )
+        resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
+        config=result.best_config,
+        num_samples=1,
+        scheduler=scheduler
     )
 
     new_results = new_tuner.fit()
