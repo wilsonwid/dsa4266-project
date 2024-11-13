@@ -27,6 +27,8 @@ transformers = "*"
 torch = "*"
 ray = {extras = ["serve", "train", "tune", "data"], version = "*"}
 openpyxl = "*"
+onnx = "*"
+onnxscript = "*"
 
 [dev-packages]
 tqdm = "*"

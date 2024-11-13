@@ -655,8 +655,6 @@ if __name__ == "__main__":
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)
 
-        if prob[0] < 0.5:
-            prob = [1 - prob]
         probs.extend(prob)
 
     df = pd.DataFrame({
@@ -665,6 +663,8 @@ if __name__ == "__main__":
         "predicted": collected_predictions,
         "probability": probs
     })
+
+    df["probability"] = df["probability"].apply(lambda x: 1 - x if x < 0.5 else x) 
 
     df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/predictions_{MODEL_NAME}.csv")
 
