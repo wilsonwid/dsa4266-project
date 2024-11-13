@@ -18,7 +18,7 @@ from utils.dataset import VideoDataset
 from ray import tune, train
 from ray.train import Checkpoint, get_checkpoint
 from ray.tune.schedulers import ASHAScheduler
-from models.rcnn.rcnn import RecurrentConvolutionalNetwork
+from models.cnn_lstm.cnn_lstm_2d import CNN_LSTM_2D
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -30,10 +30,10 @@ from torchvision.transforms import v2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-MODEL_NAME = "rcnn"
+MODEL_NAME = "cnn_lstm"
 NOW = dt.datetime.now()
 FILENAME = f"{NOW.strftime('%Y-%m-%d-%H-%M-%S')}"
-SAVE_DIR = f"{main_folder_path}/models/rcnn/saved_models"
+SAVE_DIR = f"{main_folder_path}/models/cnn_lstm/saved_models"
 DATA_FOLDER = "data"
 INF = 100000000.
 NUM_WORKERS = 8
@@ -59,13 +59,13 @@ def train_model(
     Returns:
         None
     """
-    writer = SummaryWriter(f"runs/rcnn_{timestamp}")
+    writer = SummaryWriter(f"runs/cnn_lstm_{timestamp}")
 
     transforms = v2.Compose([
         v2.RandomHorizontalFlip(p=0.5),
         v2.ColorJitter(),
         v2.GaussianBlur(kernel_size=3),
-        v2.RandomAdjustSharpness(1.5)
+        v2.RandomAdjustSharpness(1.5),
     ])
 
     train_dataset = VideoDataset(
@@ -92,24 +92,28 @@ def train_model(
         num_workers=NUM_WORKERS
     )
 
-    model = RecurrentConvolutionalNetwork(
-        input_channels=config["input_channels"],
-        num_recurrent_layers=config["num_recurrent_layers"],
-        num_kernels=config["num_kernels"],
-        kernel_size=config["kernel_size"],
-        stride=config["stride"],
-        padding=config["padding"],
-        dropout_prob=config["dropout_prob"],
-        nonlinearity=config["nonlinearity"],
-        bias=config["bias"],
-        steps=config["steps"],
-        num_classes=config["num_classes"],
+    model = CNN_LSTM_2D(
+        input_channels=int(config["input_channels"]),
+        num_cnn_layers=int(config["num_cnn_layers"]),
+        num_start_kernels=int(config["num_start_kernels"]),
+        kernel_size=int(config["kernel_size"]),
+        stride=1,
+        padding="same",
+        dropout_prob=float(config["dropout_prob"]),
+        bias=False,
+        num_lstm_layers=int(config["num_lstm_layers"]),
+        hidden_size=int(config["hidden_size"]),
+        num_classes=NUM_CLASSES,
+        bidirectional=bool(config["bidirectional"]),
+        input_shape=(224, 224),
+        steps=int(config["steps"]),
+        nonlinearity=config["nonlinearity"]
     )
 
     print(device)
     model = model.to(device)
 
-    loss_fn = nn.CrossEntropyLoss()
+    loss_fn = nn.BCELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -139,6 +143,7 @@ def train_model(
         for i, data in tqdm(enumerate(train_loader)):
             subprocess.run(["nvidia-smi"])
             vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+            labels = labels.type(torch.float32).unsqueeze(dim=1)
 
             optimizer.zero_grad()
             output = model(vid_inputs)
@@ -149,7 +154,7 @@ def train_model(
             running_loss += loss.item()
 
             numpy_labels = labels.cpu().numpy().tolist()
-            actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+            actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()    
 
             collected_labels.extend(numpy_labels)
             collected_predictions.extend(actual_predictions)
@@ -181,12 +186,16 @@ def train_model(
             collected_labels, collected_predictions = [], []
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                labels = labels.type(torch.float32).unsqueeze(dim=1)
+                optimizer.zero_grad()
                 output = model(vid_inputs)
                 loss = loss_fn(output, labels)
+                loss.backward()
+                optimizer.step()
                 running_loss += loss.item()
 
                 numpy_labels = labels.cpu().numpy().tolist()
-                actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()    
 
                 collected_labels.extend(numpy_labels)
                 collected_predictions.extend(actual_predictions)
@@ -206,12 +215,14 @@ def train_model(
                 collected_labels, collected_predictions = [], []
                 for i, vdata in enumerate(val_loader):
                     vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
+                    labels = labels.type(torch.float32).unsqueeze(dim=1)
+
                     output = model(vid_inputs)
                     loss = loss_fn(output, labels)
                     running_loss += loss.item()
 
                     numpy_labels = labels.cpu().numpy().tolist()
-                    actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
+                    actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()    
 
                     collected_labels.extend(numpy_labels)
                     collected_predictions.extend(actual_predictions)
@@ -256,9 +267,12 @@ def train_model(
             
             checkpoint = Checkpoint.from_directory(checkpoint_dir)
             train.report({
-                "loss": avg_vloss,
-                "f1": val_f1,
-                "acc": val_acc
+                "val_loss": avg_vloss,
+                "val_f1": val_f1,
+                "val_acc": val_acc,
+                "train_loss": last_loss,
+                "train_f1": epoch_f1,
+                "train_acc": epoch_acc
             }, checkpoint=checkpoint)
     
     print("Finished training")
@@ -293,44 +307,51 @@ def get_arguments() -> argparse.Namespace:
     return parser.parse_args()
     
 if __name__ == "__main__":
+    args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_recurrent_layers": 2,
-        "num_kernels": 60,
-        "kernel_size": 9,
+        "num_cnn_layers": 3,
+        "num_start_kernels": 32,
+        "kernel_size": 8,
         "stride": 1,
         "padding": "same",
-        "dropout_prob": 0.185931,
-        "nonlinearity": NonlinearityEnum.ELU,
+        "dropout_prob": 0.1,
         "bias": False,
-        "steps": 64,
+        "num_lstm_layers": 3,
+        "hidden_size": 2,
         "num_classes": NUM_CLASSES,
-        "batch_size": 2,
-        "lr": 0.0001236517,
-        "include_additional_transforms": False
+        "bidirectional": True,
+        "input_shape": (224, 224),
+        "batch_size": 1,
+        "lr": 0.000578065,
+        "steps": 124,
+        "nonlinearity": NonlinearityEnum.LRELU,
+        "include_additional_transforms": False,
     }
 
-    gpus_per_trial = GPUS_PER_TRIAL
-
-    best_trained_model = RecurrentConvolutionalNetwork(
+    best_trained_model = CNN_LSTM_2D(
         input_channels=search_space["input_channels"],
-        num_recurrent_layers=search_space["num_recurrent_layers"],
-        num_kernels=search_space["num_kernels"],
+        num_cnn_layers=search_space["num_cnn_layers"],
+        num_start_kernels=search_space["num_start_kernels"],
         kernel_size=search_space["kernel_size"],
-        stride=search_space["stride"],
-        padding=search_space["padding"],
+        stride=1,
+        padding="same",
         dropout_prob=search_space["dropout_prob"],
-        nonlinearity=search_space["nonlinearity"],
-        bias=search_space["bias"],
+        bias=False,
+        num_lstm_layers=search_space["num_lstm_layers"],
+        hidden_size=search_space["hidden_size"],
+        num_classes=NUM_CLASSES,
+        bidirectional=search_space["bidirectional"],
+        input_shape=(224, 224),
         steps=search_space["steps"],
-        num_classes=search_space["num_classes"],
+        nonlinearity=search_space["nonlinearity"]
     )
 
-    weights_dir = "/home/w/wilsonwi/ray_results/train_model_2024-11-13_14-55-55/train_model_54b78_00000_0_2024-11-13_14-55-56/checkpoint_000005"
+    directory = "/home/w/wilsonwi/ray_results/train_model_2024-11-13_17-11-29/train_model_446f3_00000_0_2024-11-13_17-11-29/checkpoint_000000"
 
-    with open(f"{weights_dir}/data.pkl", "rb") as f:
-        result = pickle.load(f)
-        best_trained_model.load_state_dict(result["net_state_dict"])
+    with open(f"{directory}/data.pkl", "rb") as fp:
+        best_checkpoint_data = pickle.load(fp)
+        best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test",
