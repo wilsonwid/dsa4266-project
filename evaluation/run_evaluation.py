@@ -6,6 +6,7 @@ evaluations = [
     {"model_name": "cnn", "model_path": "models/cnn/results/best_cnn_model.h5", "results_path": "models/cnn/results/video_classification_results.csv"}, # CNN
     {"model_name": "resnet", "model_path": "models/resnet/results/best_model.keras", "results_path": "models/resnet/results/resnet_results.csv"}, # ResNet
     {"model_name": "videomae", "model_path": None, "results_path": "models/videomae/results/results-32-frames.csv"}, # VideoMAE (no model path)
+    {"model_name": "rcnn", "model_path": None, "results_path": "models/rcnn/results/predictions_rcnn_transformed.csv"}, # RCNN
 ]
 
 # Loop through each model and results pair, running evaluation for each
