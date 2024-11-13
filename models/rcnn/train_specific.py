@@ -302,13 +302,13 @@ if __name__ == "__main__":
     args = get_arguments()
     search_space = {
         "input_channels": 3,
-        "num_recurrent_layers": 4,
-        "num_kernels": 11,
-        "kernel_size": 6,
+        "num_recurrent_layers": 2,
+        "num_kernels": 60,
+        "kernel_size": 9,
         "stride": 1,
         "padding": "same",
-        "dropout_prob": 0.1807,
-        "nonlinearity": NonlinearityEnum.SILU,
+        "dropout_prob": 0.185931,
+        "nonlinearity": NonlinearityEnum.ELU,
         "bias": False,
         "steps": 64,
         "num_classes": NUM_CLASSES,
@@ -398,11 +398,12 @@ if __name__ == "__main__":
 
     for i, data in enumerate(test_loader):
         vid_inputs, labels = data["video"].to(device), data["target"].to(device)
+        labels = labels.type(torch.float32).unsqueeze(dim=1)
         output = best_trained_model(vid_inputs)
 
         numpy_labels = labels.cpu().numpy().tolist()
-        actual_predictions = output.argmax(dim=1).cpu().numpy().tolist()
-        prob = output.max(dim=1).detach().cpu().numpy().tolist()
+        actual_predictions = (output.detach().cpu().numpy() > 0.5).astype(np.uint8).tolist()
+        prob = output.detach().cpu().numpy().tolist()
 
         collected_labels.extend(numpy_labels)
         collected_predictions.extend(actual_predictions)

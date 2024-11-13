@@ -380,7 +380,7 @@ if __name__ == "__main__":
             include_validation=True
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
-        config=search_space,
+        config=result.get_best_config("val_acc", "max", "last"),
         num_samples=1,
         scheduler=scheduler
     )

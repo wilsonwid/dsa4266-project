@@ -417,8 +417,11 @@ def train_model(
             for i, vdata in enumerate(val_loader):
                 vid_inputs, labels = vdata["video"].to(device), vdata["target"].to(device)
                 labels = labels.type(torch.float32).unsqueeze(dim=1)
+                optimizer.zero_grad()
                 output = model(vid_inputs)
                 loss = loss_fn(output, labels)
+                loss.backward()
+                optimizer.step()
                 running_loss += loss.item()
 
                 numpy_labels = labels.cpu().numpy().tolist()
@@ -460,23 +463,23 @@ def train_model(
                 print(f"Validation Loss: {loss.item()}, Validation F1 score: {val_f1}, Validation Accuracy score: {val_acc}")
                 print(collected_labels, collected_predictions)
 
-            avg_vloss = running_loss / (i + 1)
-            print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
+        avg_vloss = running_loss / (i + 1)
+        print(f"Train Loss: {last_loss}, Val Loss: {avg_vloss}")
 
-            writer.add_scalars("Training vs Validation Loss",
-                            {"Train": last_loss, "Validation": avg_vloss},
-                            epoch + 1)
-            writer.add_scalars("Training vs Validation F1 Score",
-                            {"Train": epoch_f1, "Validation": val_f1},
-                            epoch + 1)
+        writer.add_scalars("Training vs Validation Loss",
+                        {"Train": last_loss, "Validation": avg_vloss},
+                        epoch + 1)
+        writer.add_scalars("Training vs Validation F1 Score",
+                        {"Train": epoch_f1, "Validation": val_f1},
+                        epoch + 1)
 
-            writer.add_scalars("Training vs Validation Accuracy Score",
-                            {"Train": epoch_acc, "Validation": val_acc},
-                            epoch + 1)
-            writer.flush()
+        writer.add_scalars("Training vs Validation Accuracy Score",
+                        {"Train": epoch_acc, "Validation": val_acc},
+                        epoch + 1)
+        writer.flush()
 
-            if avg_vloss < best_vloss:
-                best_vloss = avg_vloss
+        if avg_vloss < best_vloss:
+            best_vloss = avg_vloss
 
 
         checkpoint_data = {
@@ -629,7 +632,7 @@ if __name__ == "__main__":
         nonlinearity=best_trial.config["nonlinearity"]
     )
 
-    best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="acc", mode="max")
+    best_checkpoint = result.get_best_checkpoint(trial=best_trial, metric="val_acc", mode="max")
 
     with best_checkpoint.as_directory() as checkpoint_dir:
         data_path = Path(checkpoint_dir) / "data.pkl"
@@ -638,7 +641,7 @@ if __name__ == "__main__":
 
         best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
 
-    new_tuner = tune.run(
+    lstm_trial = tune.run(
         partial(
             train_model, 
             epochs=10,
@@ -646,18 +649,20 @@ if __name__ == "__main__":
             cnn_model=cur_model_id
         ),
         resources_per_trial={"cpu": os.cpu_count(), "gpu": gpus_per_trial},
-        config=result.best_config,
+        config=result.get_best_config("val_acc", "max", "last"),
         num_samples=1,
         scheduler=scheduler
     )
 
-    new_results = new_tuner.fit()
+    best_lstm_checkpoint = lstm_trial.get_best_checkpoint(trial=lstm_trial, metric="val_acc", mode="max")
 
-    dfs = {result.path: result.metrics_dataframe for result in new_results}
+    with best_lstm_checkpoint.as_directory() as checkpoint_dir:
+        data_path = Path(checkpoint_dir) / "data.pkl"
+        with open(data_path, "rb") as fp:
+            best_checkpoint_data = pickle.load(fp)
 
-    for value in dfs.values():
-        value.to_csv(f"{main_folder_path}/models/cnn_lstm/best_result.csv", index=False)
-    
+        best_trained_model.load_state_dict(best_checkpoint_data["net_state_dict"])
+
 
     test_dataset = VideoDataset(
         root=f"{main_folder_path}/data/test", 
