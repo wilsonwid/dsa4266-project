@@ -23,7 +23,6 @@ def move_files(
     Returns:
         None
     """
-    # Ratios are a bit higher than normal to account for augmentation of train dataset
     files = os.listdir(source_dir)
     random.seed(42)
     random.shuffle(files)
