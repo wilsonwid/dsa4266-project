@@ -6,7 +6,7 @@ df = df.rename(
     columns={
         "epoch": "Epoch",
         "training_loss": "Training Loss",
-        "val_loss": "Validation Loss",
+        "validation_loss": "Validation Loss",
     }
 )
 
