@@ -22,13 +22,10 @@ tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 ultralytics = "*"
 scikit-image = "*"
 matplotlib = "*"
-av = "*"
-transformers = "*"
-torch = "*"
-ray = {extras = ["serve", "train", "tune", "data"], version = "*"}
-openpyxl = "*"
-onnx = "*"
-onnxscript = "*"
+keras-tuner = "*"
+keras = "*"
+pydot = "*"
+torchviz = "*"
 
 [dev-packages]
 tqdm = "*"

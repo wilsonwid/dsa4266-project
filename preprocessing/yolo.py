@@ -4,16 +4,17 @@ import os
 import cv2
 from ultralytics import YOLO
 
+# Model from https://github.com/akanametov/yolo-face
+# Downloaded in preprocessing/
+
 model = YOLO("yolov11n-face.pt")
-input_path = "../data/train_sample_videos/"
+input_path = "data/balanced_dataset/"
 SCALE = 1.5
 
 
 def extract_face_from_video(
-        folder_path: str, 
-        video_name: str, 
-        output_path: str = "../cropped/"
-    ) -> None:
+    folder_path: str, video_name: str, output_path: str = "../cropped/"
+) -> None:
     """
     Extracts the face from the video using the model, then saves it to the output path.
 
@@ -23,7 +24,7 @@ def extract_face_from_video(
         output_path (str): Output path. Defaults to `"../cropped/"`.
 
     Returns:
-        None 
+        None
     """
     # Open the input video
     cap = cv2.VideoCapture(folder_path + video_name)
@@ -90,11 +91,7 @@ def extract_face_from_video(
     return not double_face_detected
 
 
-def modify_metadata(
-        folder_path: str,
-        output_path: str,
-        file_list: list[str]
-    ):
+def modify_metadata(folder_path: str, output_path: str, file_list: list[str]):
     with open(folder_path + "metadata.json", "r") as metadata_file:
         data = json.load(metadata_file)
         processed = {file: data[file] for file in file_list}
@@ -103,9 +100,8 @@ def modify_metadata(
 
 
 def process_videos_from_folder(
-        folder_path: str | bytes | os.PathLike,
-        output_path: str = "../cropped/"
-    ) -> None:
+    folder_path: str | bytes | os.PathLike, output_path: str = "../cropped/"
+) -> None:
     """
     Processes the videos from the folder.
 
@@ -124,6 +120,7 @@ def process_videos_from_folder(
         if extract_face_from_video(folder_path, video_name, output_path):
             file_list.append(video_name)
     modify_metadata(folder_path, output_path, file_list)
+
 
 if __name__ == "__main__":
     process_videos_from_folder(input_path)

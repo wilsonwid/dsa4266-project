@@ -3,7 +3,7 @@ import os
 import shutil
 
 base_dir = "data"
-train_metadata_path = os.path.join(base_dir, "train_sample_videos", "metadata.json")
+train_metadata_path = os.path.join(base_dir, "balanced_dataset", "metadata.json")
 cropped_dir = os.path.join(base_dir, "cropped")
 deepfake_dir = os.path.join(base_dir, "train", "deepfake")
 real_dir = os.path.join(base_dir, "train", "real")

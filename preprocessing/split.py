@@ -4,12 +4,12 @@ import shutil
 
 
 def move_files(
-        source_dir: str | bytes | os.PathLike, 
-        test_dir: str | bytes | os.PathLike, 
-        val_dir: str | bytes | os.PathLike, 
-        test_ratio: float = 0.4, 
-        val_ratio: float = 0.3
-    ) -> None:  
+    source_dir: str | bytes | os.PathLike,
+    test_dir: str | bytes | os.PathLike,
+    val_dir: str | bytes | os.PathLike,
+    test_ratio: float = 0.2,
+    val_ratio: float = 0.15,
+) -> None:
     """
     Moves some files from the source directory to the test and validation directory.
 
@@ -17,13 +17,12 @@ def move_files(
         source_dir (str | bytes | os.PathLike): Source directory for the videos.
         test_dir (str | bytes | os.PathLike): Test set directory.
         val_dir (str | bytes | os.PathLike): Validation set directory.
-        test_ratio (float): Ratio for the test set. Defaults to 0.4.
-        val_ratio (float): Ratio for the validation set. Defaults to 0.3.
-    
+        test_ratio (float): Ratio for the test set. Defaults to 0.2.
+        val_ratio (float): Ratio for the validation set. Defaults to 0.15.
+
     Returns:
         None
     """
-    # Ratios are a bit higher than normal to account for augmentation of train dataset
     files = os.listdir(source_dir)
     random.seed(42)
     random.shuffle(files)
@@ -45,6 +44,7 @@ def move_files(
 
     print(f"Moved {test_count} files to {test_dir}")
     print(f"Moved {val_count} files to {val_dir}")
+
 
 if __name__ == "__main__":
     base_dir = "data"
