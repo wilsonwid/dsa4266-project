@@ -28,7 +28,7 @@ from functools import partial
 from utils.types import NonlinearityEnum
 from torchvision.transforms import v2
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = "cpu" 
 
 MODEL_NAME = "cnn_lstm"
 NOW = dt.datetime.now()
