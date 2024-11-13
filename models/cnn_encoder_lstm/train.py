@@ -19,7 +19,7 @@ from ray import tune, train
 from utils.dataset import VideoDataset
 from ray.train import Checkpoint, get_checkpoint
 from ray.tune.schedulers import ASHAScheduler
-from models.cnn_split_lstm.cnn_split_lstm import CNN_Section, CNN_LSTM_Separate
+from models.cnn_encoder_lstm.cnn_encoder_lstm import CNN_Section, CNN_LSTM_Separate
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
