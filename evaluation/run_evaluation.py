@@ -7,7 +7,7 @@ evaluations = [
     {"model_name": "resnet", "model_path": "models/resnet/results/best_model.keras", "results_path": "models/resnet/results/resnet_results.csv"}, # ResNet
     {"model_name": "videomae", "model_path": None, "results_path": "models/videomae/results/results-32-frames.csv"}, # VideoMAE (no model path)
     {"model_name": "rcnn", "model_path": None, "results_path": "models/rcnn/results/predictions_rcnn_transformed.csv"}, # RCNN
-    {"model_name": "cnn_encoder_lstm", "model_path": None, "results_path": "models/cnn_encoder_lstm/results/predictions_cnn_split_lstm_transformed.csv"}, # cnn encoder lstm
+    {"model_name": "cnn_encoder_lstm", "model_path": None, "results_path": "models/cnn_encoder_lstm/results/predictions_cnn_encoder_lstm_transformed.csv"}, # cnn encoder lstm
 ]
 
 # Loop through each model and results pair, running evaluation for each

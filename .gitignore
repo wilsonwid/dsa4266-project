@@ -175,7 +175,3 @@ cython_debug/
 /models/cnn/tuner_dir/
 
 /evaluation/evaluation-results/
-/models/resnet/results/
-/models/videomae/results/
-/models/rcnn/results/
-/models/vit/results/
