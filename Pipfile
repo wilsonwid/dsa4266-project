@@ -17,7 +17,6 @@ ipykernel = "*"
 seaborn = "*"
 ffmpeg-python = "*"
 opencv-python = "*"
-torch = "*"
 torchvision = "*"
 tensorflow-macos = {version = "*", markers = "sys_platform == 'darwin'"}
 ultralytics = "*"
@@ -26,11 +25,12 @@ matplotlib = "*"
 keras-tuner = "*"
 keras = "*"
 pydot = "*"
-graphviz = "*"
+torchviz = "*"
+ipywidgets = "*"
 
 [dev-packages]
 tqdm = "*"
+torch-tb-profiler = "*"
 
 [requires]
 python_version = "3.11"
-python_full_version = "3.11.8"
