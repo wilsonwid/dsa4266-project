@@ -32,20 +32,14 @@ Repository for DSA4266 project.
 
 The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
 
-<<<<<<< HEAD
-# Model Repositories
-- [CNN Model](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
-- [Resnet Model](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
-- [VideoMAE](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
-
-# Repository structure
-=======
 - Frame-based Convolutional Neural Networks (**CNN**)
+   - [CNN Model Repository](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
 - Residual Networks (**ResNet**)
+   - [Resnet Model Repository](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
 - Region-based CNNs (**RCNN**)
-- CNN-Long Short Term Memory (**CNN-LSTM**)
-- **Vision Video Transformers**
->>>>>>> 72bb7e86ffda03bf5dc1245145914194305539b1
+- CNN-Encoder + Long Short Term Memory (**CNN-Encoder + LSTM**)
+- Video Masked Autoencoders (**VideoMAE**)
+   - [VideoMAE Model Repository](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
 
 The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, **high precision** and **recall** should be achieved, ensuring minimal **false positives** (incorrectly labelling real videos as fake) and **false negatives** (failing to detect a deepfake).
 
