@@ -10,7 +10,8 @@ ResNet is a type of CNN architecture introduced to tackle the problem of vanishi
 
 ### Recurrent CNNs (RCNN)
 
-TBC
+Recurrent CNNs (RCNNs) are a type of CNN architecture that applies the convolutions across different time steps in a video. This is achieved via the use of Recurrent Convolutional Layers (RCLs) that contain the convolutions previously mentioned. Theoretically, it will be able to learn spatio-temporal representations that allow it to predict better compared to normal CNNs.
+
 
 ### CNN-Long Short Term Memory (CNN-LSTM)
 
