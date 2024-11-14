@@ -75,11 +75,6 @@ The models will leverage visual features extracted from video frames to distingu
 ├── Pipfile.lock
 ├── README.md
 ├── __init__.py
-├── augmentation.py
-├── checking.ipynb
-├── cnn_lstm_separate
-├── cnn_lstm_separate.png
-├── create_videos_from_augmented.py
 ├── data
 ├── eda
 │   ├── README.md
@@ -107,7 +102,6 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   ├── videomae_classification_report.png
 │   │   └── videomae_confusion_matrix.png
 │   └── run_evaluation.py
-├── example-output
 ├── explainability
 │   ├── Gradcam_CNN.ipynb
 │   ├── Gradcam_Resnet.ipynb
@@ -123,8 +117,8 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   ├── cnn_dev.ipynb
 │   │   ├── cnn_dev.py
 │   │   ├── cnn_dev_predictions.py
-│   │   ├── cnn_evaluation.py
-│   │   ├── cnn_loss.png
+│   │   ├── diagrams
+│   │   │   └── cnn_loss.png
 │   │   ├── loss.py
 │   │   └── results
 │   │       ├── cnn_loss.csv
@@ -132,56 +126,31 @@ The models will leverage visual features extracted from video frames to distingu
 │   │       ├── video_classification_results.csv
 │   │       └── video_classification_results_rd_2.csv
 │   ├── cnn_encoder_lstm
-│   │   ├── cnn_encoder_lstm
-│   │   ├── cnn_encoder_lstm.png
 │   │   ├── cnn_encoder_lstm.py
-│   │   ├── cnn_encoder_lstm_loss.png
+│   │   ├── diagrams
+│   │   │   ├── cnn_encoder_lstm
+│   │   │   ├── cnn_encoder_lstm.png
+│   │   │   ├── cnn_encoder_lstm_loss.png
+│   │   │   └── transform_results.py
 │   │   ├── loss.py
 │   │   ├── model_arch.ipynb
-│   │   ├── predictions_cnn_split_lstm.csv
-│   │   ├── progress.csv
 │   │   ├── results
-│   │   │   ├── cnn_encoder_lstm_loss.csv
 │   │   │   ├── predictions_cnn_encoder_lstm.csv
 │   │   │   ├── predictions_cnn_encoder_lstm_transformed.csv
-│   │   │   ├── progress.csv
-│   │   │   └── transform_results.py
+│   │   │   └── progress.csv
 │   │   ├── test_specific.py
 │   │   ├── train.py
 │   │   ├── train_specific.py
 │   │   └── train_specific_specific.py
-│   ├── cnn_lstm
-│   │   ├── best_result_metrics.csv
-│   │   ├── cnn_lstm.py
-│   │   ├── cnn_lstm_2d
-│   │   ├── cnn_lstm_2d.png
-│   │   ├── cnn_lstm_2d.py
-│   │   ├── conv_lstm.py
-│   │   ├── model_arch.ipynb
-│   │   ├── slurm_job.sh
-│   │   ├── slurm_job_2d.sh
-│   │   ├── test_specific.py
-│   │   ├── testing.ipynb
-│   │   ├── train.py
-│   │   ├── train.sh
-│   │   ├── train_2d.py
-│   │   ├── train_2d.sh
-│   │   ├── train_conv_lstm.py
-│   │   └── train_specific.py
-│   ├── cnn_test
-│   │   ├── cnn_test.py
-│   │   └── cnn_train.py
 │   ├── rcnn
 │   │   ├── __init__.py
+│   │   ├── diagrams
+│   │   │   ├── rcnn_diagram
+│   │   │   ├── rcnn_diagram.png
+│   │   │   └── rcnn_loss.png
 │   │   ├── loss.py
-│   │   ├── loss_data.csv
 │   │   ├── model_arch.ipynb
-│   │   ├── predictions_rcnn.csv
 │   │   ├── rcnn.py
-│   │   ├── rcnn_diagram
-│   │   ├── rcnn_diagram.png
-│   │   ├── rcnn_draft.ipynb
-│   │   ├── rcnn_loss.png
 │   │   ├── results
 │   │   │   ├── predictions_rcnn.csv
 │   │   │   ├── predictions_rcnn_transformed.csv
@@ -192,32 +161,23 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   └── train_specific.py
 │   ├── resnet
 │   │   ├── README.md
+│   │   ├── diagrams
+│   │   │   └── resnet_loss.png
 │   │   ├── loss.py
 │   │   ├── resnet.ipynb
-│   │   ├── resnet_loss.png
 │   │   └── results
 │   │       ├── resnet_results.csv
-│   │       ├── results.csv
 │   │       ├── training_loss.csv
 │   │       └── tuning_loss.csv
-│   ├── videomae
-│   │   ├── README.md
-│   │   ├── loss.py
-│   │   ├── results
-│   │   │   ├── results-32-frames.csv
-│   │   │   ├── results.csv
-│   │   │   └── videomae_loss.csv
-│   │   ├── videomae.ipynb
-│   │   └── videomae_loss.png
-│   ├── vit
-│   │   └── __init__.py
-│   └── vitmae
-│       ├── __init__.py
-│       ├── slurm_job.sh
-│       ├── train.py
-│       ├── train.sh
-│       ├── verify_sizes.ipynb
-│       └── vitmae.py
+│   └── videomae
+│       ├── README.md
+│       ├── diagrams
+│       │   └── videomae_loss.png
+│       ├── loss.py
+│       ├── results
+│       │   ├── results-32-frames.csv
+│       │   └── videomae_loss.csv
+│       └── videomae.ipynb
 ├── preprocessing
 │   ├── Data flow pipeline.png
 │   ├── README.md
@@ -232,16 +192,16 @@ The models will leverage visual features extracted from video frames to distingu
 │   ├── split.py
 │   ├── yolo.py
 │   └── yolov11n-face.pt
-├── pyvenv.cfg
-├── rough_work.ipynb
-├── utils
-│   ├── __init__.py
-│   ├── checking_dataset.ipynb
-│   ├── dataset.py
-│   ├── dataset_vitmae.py
-│   ├── types.py
-│   └── utils.py
-└── video_proc.py
+└── utils
+    ├── __init__.py
+    ├── augmentation.py
+    ├── checking_dataset.ipynb
+    ├── dataset.py
+    ├── dataset_vitmae.py
+    ├── rough_work.ipynb
+    ├── types.py
+    ├── utils.py
+    └── video_proc.py
 ```
 
 ## Team members
