@@ -12,10 +12,10 @@ ResNet is a type of CNN architecture introduced to tackle the problem of vanishi
 
 Recurrent CNNs (RCNNs) are a type of CNN architecture that applies the convolutions across different time steps in a video. This is achieved via the use of Recurrent Convolutional Layers (RCLs) that contain the convolutions previously mentioned. Theoretically, it will be able to learn spatio-temporal representations that allow it to predict better compared to normal CNNs.
 
+### CNN-encoder + LSTM
 
-### CNN-Long Short Term Memory (CNN-LSTM)
+CNN-encoder + LSTM is a type of architecture that uses the CNN as an encoder for input to the LSTM. This CNN will be trained first on predicting classes of frames, before the classifcation head is removed and the LSTM added to the end. When training the whole model, the CNN section's weights are frozen to ensure that only the LSTM and its classification head is able to be trained.
 
-CNN-LSTM networks combine CNNs and LSTMs to handle spatiotemporal data, making them ideal for video and sequence-based tasks. The CNN component is used to extract spatial features from frames or images, while the LSTM captures the temporal dependencies across these frames. This combination allows the model to capture patterns over time, which is beneficial for tasks like action recognition in videos, human activity analysis, and sequence prediction. By leveraging both spatial and temporal information, CNN-LSTM networks achieve impressive results in understanding complex sequential data.
 
 ### Video Masked Autoencoders (VideoMAE)
 
