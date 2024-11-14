@@ -124,6 +124,7 @@ The models will leverage visual features extracted from video frames to distingu
 │   │       ├── video_classification_results.csv
 │   │       └── video_classification_results_rd_2.csv
 │   ├── cnn_encoder_lstm
+│   │   ├── README.md
 │   │   ├── cnn_encoder_lstm.py
 │   │   ├── diagrams
 │   │   │   ├── cnn_encoder_lstm
@@ -141,6 +142,7 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   ├── train_specific_specific.py
 │   │   └── transform_results.py
 │   ├── rcnn
+│   │   ├── README.md
 │   │   ├── __init__.py
 │   │   ├── diagrams
 │   │   │   ├── rcnn_diagram
