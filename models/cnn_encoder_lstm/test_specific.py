@@ -666,6 +666,6 @@ if __name__ == "__main__":
 
     df["probability"] = df["probability"].apply(lambda x: 1 - x if x < 0.5 else x) 
 
-    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/predictions_{MODEL_NAME}.csv")
+    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/results/predictions_{MODEL_NAME}.csv")
 
     print("Finished entire training regime")

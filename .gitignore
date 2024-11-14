@@ -176,7 +176,8 @@ AUGMENTED/
 
 *.zip
 *.tar
-#DS_store
+
+# MacOS
 .DS_Store
 
 /models/*/*.h5

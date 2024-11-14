@@ -416,7 +416,7 @@ if __name__ == "__main__":
         "probability": probs
     })
 
-    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/predictions_{MODEL_NAME}.csv")
+    df.to_csv(f"{main_folder_path}/models/{MODEL_NAME}/results/predictions_{MODEL_NAME}.csv")
 
     print("Finished entire training regime")
 
