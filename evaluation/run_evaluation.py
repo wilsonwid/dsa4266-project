@@ -3,9 +3,11 @@ from evaluate_model import evaluate_model
 
 # List of model and result paths for evaluation
 evaluations = [
-    {"model_name": "cnn", "model_path": "../models/cnn/results/best_cnn_model.h5", "results_path": "../models/cnn/results/video_classification_results.csv"}, # CNN
-    {"model_name": "resnet", "model_path": "path/to/second_model.h5", "results_path": "path/to/second_results.csv"}, # ResNet
-    {"model_name": "videomae", "model_path": None, "results_path": "path/to/second_results.csv"}, # VideoMAE (no model path)
+    {"model_name": "cnn", "model_path": "models/cnn/results/best_cnn_model_round2.h5", "results_path": "models/cnn/results/video_classification_results_rd_2.csv"}, # CNN
+    {"model_name": "resnet", "model_path": "models/resnet/results/best_model.keras", "results_path": "models/resnet/results/resnet_results.csv"}, # ResNet
+    {"model_name": "videomae", "model_path": None, "results_path": "models/videomae/results/results-32-frames.csv"}, # VideoMAE (no model path)
+    {"model_name": "rcnn", "model_path": None, "results_path": "models/rcnn/results/predictions_rcnn_transformed.csv"}, # RCNN
+    {"model_name": "cnn_encoder_lstm", "model_path": None, "results_path": "models/cnn_encoder_lstm/results/predictions_cnn_encoder_lstm_transformed.csv"}, # cnn encoder lstm
 ]
 
 # Loop through each model and results pair, running evaluation for each

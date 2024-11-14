@@ -179,10 +179,9 @@ AUGMENTED/
 #DS_store
 .DS_Store
 
-/models/*/results/
 /models/*/*.h5
 /models/*/*.keras
+/models/*/*/*.h5
+/models/*/*/*.keras
 /models/cnn/training_output.csv
 /models/cnn/tuner_dir/
-
-/evaluation/evaluation-results/

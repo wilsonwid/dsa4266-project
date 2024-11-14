@@ -11,7 +11,7 @@ def load_results(filepath):
     """Load the results CSV file."""
     return pd.read_csv(filepath)
 
-def plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name, output_dir='evaluation-results'):
+def plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name, output_dir):
     """Plot the AUC-ROC curve and determine the optimal threshold."""
     fpr, tpr, thresholds = roc_curve(y_true, y_pred_prob)
     roc_auc = auc(fpr, tpr)
@@ -32,22 +32,22 @@ def plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name, outp
     plt.title('Receiver Operating Characteristic (ROC) Curve')
     plt.legend(loc='lower right')
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(f"{output_dir}/{model_name}_auc_roc_curve.png")
+    plt.savefig(os.path.join(output_dir,f"{model_name}_auc_roc_curve.png"))
     plt.close()
 
     return optimal_threshold
 
-def plot_confusion_matrix(y_true, y_pred_binary, model_name, output_dir='evaluation-results'):
-    """Plot and save the confusion matrix."""
+def plot_confusion_matrix(y_true, y_pred_binary, model_name, output_dir):
+    """Plot and save the confusion matrix, 0 = real and 1 = deepfake"""
     cm = confusion_matrix(y_true, y_pred_binary)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Real", "Deepfake"])
     disp.plot(cmap=plt.cm.Blues)
     plt.title("Confusion Matrix")
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(f"{output_dir}/{model_name}_confusion_matrix.png")
+    plt.savefig(os.path.join(output_dir,f"{model_name}_confusion_matrix.png"))
     plt.close()
 
-def save_classification_report_image(y_true, y_pred_binary, model_name, output_dir='evaluation-results'):
+def save_classification_report_image(y_true, y_pred_binary, model_name, output_dir):
     """Generate and save the classification report as a styled image with formatted values."""
     # Generate the classification report as a DataFrame
     report = classification_report(y_true, y_pred_binary, target_names=["Real", "Deepfake"], output_dict=True)
@@ -92,36 +92,42 @@ def save_classification_report_image(y_true, y_pred_binary, model_name, output_d
 
     # Save the styled table as an image
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(f"{output_dir}/{model_name}_classification_report.png", bbox_inches='tight', dpi=150)
+    plt.savefig(os.path.join(output_dir,f"{model_name}_classification_report.png"), bbox_inches='tight', dpi=150)
     plt.close()
     print(f"Styled classification report saved as image to {output_dir}/{model_name}_classification_report.png")
 
-def save_model_diagram(model, model_name, output_dir='evaluation-results'):
+def save_model_diagram(model, model_name, output_dir):
     os.makedirs(output_dir, exist_ok=True)
-    plot_model(model, to_file=f"{output_dir}/{model_name}_model_diagram.png", show_shapes=True, show_layer_names=True)
-    print(f"Model diagram saved to {output_dir}/{model_name}_model_diagram.png")
+    try:
+        plot_fpath = os.path.join(output_dir,f"{model_name}_model_diagram.png")
+        plot_model(model, to_file=plot_fpath, show_shapes=True, show_layer_names=True)
+        print(f"Model diagram saved to {plot_fpath}")
+    except Exception as e:
+        print(f"An error occurred while plotting model diagram for {model_name} as {e}")
 
 def evaluate_model(model_name, results_path, model_path=None):
     # Load the results CSV file
     results_df = load_results(results_path)
+    output_dir = 'evaluation/evaluation-results/'
 
     # Prepare true labels and predicted probabilities
     y_true = results_df['actual_label']
     y_pred_prob = results_df['predicted_probability']
 
     # Plot the ROC curve and determine the optimal threshold
-    optimal_threshold = plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name)
+    optimal_threshold = plot_roc_curve_and_determine_threshold(y_true, y_pred_prob, model_name, output_dir)
 
     # Apply the optimal threshold to create binary predictions
     y_pred_binary = [1 if prob >= optimal_threshold else 0 for prob in y_pred_prob]
 
     # Plot and save the confusion matrix
-    plot_confusion_matrix(y_true, y_pred_binary, model_name)
+    plot_confusion_matrix(y_true, y_pred_binary, model_name, output_dir)
 
     # Save the classification report as an image
-    save_classification_report_image(y_true, y_pred_binary, model_name)
+    save_classification_report_image(y_true, y_pred_binary, model_name, output_dir)
 
     # Conditionally load the model and save the model diagram if model_path is provided
     if model_path is not None:
         model = load_model(model_path)
-        save_model_diagram(model, model_name)
+        # model.compile(optimizer='adam', loss='binary_crossentropy')
+        save_model_diagram(model, model_name, output_dir)
