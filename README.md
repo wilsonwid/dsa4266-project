@@ -49,22 +49,20 @@ The models will leverage visual features extracted from video frames to distingu
 
 ## Instructions for Dataset
 
-1. **Organize by Model Name**: Inside the `/data` folder, create subdirectories for each model you want to run, named exactly as specified:
+1. **Organise by Model Name**: Inside the `/data` folder, create subdirectories for each model you want to run, named exactly as specified:
 
 - `/data/cnn`
+- `/data/cnn_encoder_lstm`
 - `/data/rcnn`
 - `/data/resnet`
 - `/data/videomae`
-- `/data/vit`
 
-2. **Unzip Data Files**: Unzip each model's dataset into the respective subdirectory.
-
-3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `/data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
-
-### Preprocessed Dataset Links
+2. **Unzip Data Files**: Unzip each model's dataset into the respective subdirectory:
 
 - [Frames dataset](https://mega.nz/folder/fMgSib6K#kxDLFKpqvYMZSaMi3hoxCw) for frame-based models.
 - [Videos dataset](https://mega.nz/file/DIBmRRgC#gDPsrAJNF4zRKA0wCj0iRbbxNl1DIuI3SRKC0AUEvoU) for video-based models.
+
+3. **Verify File Paths**: Each model script should automatically refer to its dedicated folder under `/data/<model-name>`. Ensure that any required subfolders or files are placed correctly to avoid path errors.
 
 ## Repository structure
 
@@ -130,8 +128,7 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   ├── diagrams
 │   │   │   ├── cnn_encoder_lstm
 │   │   │   ├── cnn_encoder_lstm.png
-│   │   │   ├── cnn_encoder_lstm_loss.png
-│   │   │   └── transform_results.py
+│   │   │   └── cnn_encoder_lstm_loss.png
 │   │   ├── loss.py
 │   │   ├── model_arch.ipynb
 │   │   ├── results
@@ -141,7 +138,8 @@ The models will leverage visual features extracted from video frames to distingu
 │   │   ├── test_specific.py
 │   │   ├── train.py
 │   │   ├── train_specific.py
-│   │   └── train_specific_specific.py
+│   │   ├── train_specific_specific.py
+│   │   └── transform_results.py
 │   ├── rcnn
 │   │   ├── __init__.py
 │   │   ├── diagrams
