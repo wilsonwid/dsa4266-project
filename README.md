@@ -33,13 +33,13 @@ Repository for DSA4266 project.
 The objective of this project is to develop several machine learning models capable of accurately classifying videos as either real or deepfake, which is a binary classification task. In this study, we develop several machine learning models on the Deepfake Detection Challenge (DFDC) dataset, including:
 
 - Frame-based Convolutional Neural Networks (**CNN**)
-   - [CNN Model Repository](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
+  - [CNN Model Repository](https://huggingface.co/shylhy/cnn-keras-deepfake-subset)
 - Residual Networks (**ResNet**)
-   - [Resnet Model Repository](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
+  - [Resnet Model Repository](https://huggingface.co/shylhy/resnet-keras-deepfake-subset)
 - Recurrent CNNs (**RCNN**)
 - CNN-Encoder + Long Short Term Memory (**CNN-Encoder + LSTM**)
 - Video Masked Autoencoders (**VideoMAE**)
-   - [VideoMAE Model Repository](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
+  - [VideoMAE Model Repository](https://huggingface.co/shylhy/videomae-large-finetuned-deepfake-subset)
 
 The models will leverage visual features extracted from video frames to distinguish deepfake videos from real videos. We then proceed to evaluate the performance of these models using the Area Under Curve (**AUC**) - Receiver Operating Characteristic (**ROC**) Curve to determine the optimal threshold to use when making predictions, before producing the classification report as well as the confusion matrix. Additionally, **high precision** and **recall** should be achieved, ensuring minimal **false positives** (incorrectly labelling real videos as fake) and **false negatives** (failing to detect a deepfake).
 
@@ -75,35 +75,152 @@ The models will leverage visual features extracted from video frames to distingu
 ├── Pipfile.lock
 ├── README.md
 ├── __init__.py
+├── augmentation.py
+├── checking.ipynb
+├── cnn_lstm_separate
+├── cnn_lstm_separate.png
+├── create_videos_from_augmented.py
 ├── data
 ├── eda
+│   ├── README.md
 │   └── jh-eda.ipynb
 ├── evaluation
-│   ├── eval_deep_fake.py
-│   ├── eval_metrics.py
-│   └── visualisations
-│       ├── auc_roc_curve.png
-│       └── confusion_matrix.png
+│   ├── README.md
+│   ├── cnn_plots.ipynb
+│   ├── evaluate_model.py
+│   ├── evaluation-results
+│   │   ├── cnn_auc_roc_curve.png
+│   │   ├── cnn_classification_report.png
+│   │   ├── cnn_confusion_matrix.png
+│   │   ├── cnn_encoder_lstm_auc_roc_curve.png
+│   │   ├── cnn_encoder_lstm_classification_report.png
+│   │   ├── cnn_encoder_lstm_confusion_matrix.png
+│   │   ├── cnn_model_diagram.png
+│   │   ├── rcnn_auc_roc_curve.png
+│   │   ├── rcnn_classification_report.png
+│   │   ├── rcnn_confusion_matrix.png
+│   │   ├── resnet_auc_roc_curve.png
+│   │   ├── resnet_classification_report.png
+│   │   ├── resnet_confusion_matrix.png
+│   │   ├── resnet_model_diagram.png
+│   │   ├── videomae_auc_roc_curve.png
+│   │   ├── videomae_classification_report.png
+│   │   └── videomae_confusion_matrix.png
+│   └── run_evaluation.py
 ├── example-output
+├── explainability
+│   ├── Gradcam_CNN.ipynb
+│   ├── Gradcam_Resnet.ipynb
+│   ├── README.md
+│   └── sample_frames
+│       ├── frame_0008_adgb_deepfake.jpg
+│       └── frame_0028_afbg_real.jpg
 ├── models
+│   ├── README.md
+│   ├── __init__.py
 │   ├── cnn
+│   │   ├── README.md
 │   │   ├── cnn_dev.ipynb
 │   │   ├── cnn_dev.py
 │   │   ├── cnn_dev_predictions.py
-│   │   └── cnn_evaluation.py
+│   │   ├── cnn_evaluation.py
+│   │   ├── cnn_loss.png
+│   │   ├── loss.py
+│   │   └── results
+│   │       ├── cnn_loss.csv
+│   │       ├── results.csv
+│   │       ├── video_classification_results.csv
+│   │       └── video_classification_results_rd_2.csv
+│   ├── cnn_encoder_lstm
+│   │   ├── cnn_encoder_lstm
+│   │   ├── cnn_encoder_lstm.png
+│   │   ├── cnn_encoder_lstm.py
+│   │   ├── cnn_encoder_lstm_loss.png
+│   │   ├── loss.py
+│   │   ├── model_arch.ipynb
+│   │   ├── predictions_cnn_split_lstm.csv
+│   │   ├── progress.csv
+│   │   ├── results
+│   │   │   ├── cnn_encoder_lstm_loss.csv
+│   │   │   ├── predictions_cnn_encoder_lstm.csv
+│   │   │   ├── predictions_cnn_encoder_lstm_transformed.csv
+│   │   │   ├── progress.csv
+│   │   │   └── transform_results.py
+│   │   ├── test_specific.py
+│   │   ├── train.py
+│   │   ├── train_specific.py
+│   │   └── train_specific_specific.py
+│   ├── cnn_lstm
+│   │   ├── best_result_metrics.csv
+│   │   ├── cnn_lstm.py
+│   │   ├── cnn_lstm_2d
+│   │   ├── cnn_lstm_2d.png
+│   │   ├── cnn_lstm_2d.py
+│   │   ├── conv_lstm.py
+│   │   ├── model_arch.ipynb
+│   │   ├── slurm_job.sh
+│   │   ├── slurm_job_2d.sh
+│   │   ├── test_specific.py
+│   │   ├── testing.ipynb
+│   │   ├── train.py
+│   │   ├── train.sh
+│   │   ├── train_2d.py
+│   │   ├── train_2d.sh
+│   │   ├── train_conv_lstm.py
+│   │   └── train_specific.py
+│   ├── cnn_test
+│   │   ├── cnn_test.py
+│   │   └── cnn_train.py
 │   ├── rcnn
-│   │   └── rcnn.py
+│   │   ├── __init__.py
+│   │   ├── loss.py
+│   │   ├── loss_data.csv
+│   │   ├── model_arch.ipynb
+│   │   ├── predictions_rcnn.csv
+│   │   ├── rcnn.py
+│   │   ├── rcnn_diagram
+│   │   ├── rcnn_diagram.png
+│   │   ├── rcnn_draft.ipynb
+│   │   ├── rcnn_loss.png
+│   │   ├── results
+│   │   │   ├── predictions_rcnn.csv
+│   │   │   ├── predictions_rcnn_transformed.csv
+│   │   │   ├── progress.csv
+│   │   │   └── transform_rcnn_results.py
+│   │   ├── test_specific.py
+│   │   ├── train.py
+│   │   └── train_specific.py
 │   ├── resnet
-│   │   ├── Deepfake_Basic.ipynb
 │   │   ├── README.md
-│   │   ├── resnet_analysis.py
-│   │   └── results.csv
+│   │   ├── loss.py
+│   │   ├── resnet.ipynb
+│   │   ├── resnet_loss.png
+│   │   └── results
+│   │       ├── resnet_results.csv
+│   │       ├── results.csv
+│   │       ├── training_loss.csv
+│   │       └── tuning_loss.csv
 │   ├── videomae
-│   │   ├── VIDEOMAE-32frames-fp16.xlsx
-│   │   └── VIDEOMAE-full-precision-24-frames.xlsx
-│   └── vit
-│       └── dummy.txt
+│   │   ├── README.md
+│   │   ├── loss.py
+│   │   ├── results
+│   │   │   ├── results-32-frames.csv
+│   │   │   ├── results.csv
+│   │   │   └── videomae_loss.csv
+│   │   ├── videomae.ipynb
+│   │   └── videomae_loss.png
+│   ├── vit
+│   │   └── __init__.py
+│   └── vitmae
+│       ├── __init__.py
+│       ├── slurm_job.sh
+│       ├── train.py
+│       ├── train.sh
+│       ├── verify_sizes.ipynb
+│       └── vitmae.py
 ├── preprocessing
+│   ├── Data flow pipeline.png
+│   ├── README.md
 │   ├── __init__.py
 │   ├── augment.py
 │   ├── create_balanced_dataset.ipynb
@@ -115,10 +232,16 @@ The models will leverage visual features extracted from video frames to distingu
 │   ├── split.py
 │   ├── yolo.py
 │   └── yolov11n-face.pt
-└── utils
-    ├── __init__.py
-    ├── types.py
-    └── utils.py
+├── pyvenv.cfg
+├── rough_work.ipynb
+├── utils
+│   ├── __init__.py
+│   ├── checking_dataset.ipynb
+│   ├── dataset.py
+│   ├── dataset_vitmae.py
+│   ├── types.py
+│   └── utils.py
+└── video_proc.py
 ```
 
 ## Team members
@@ -131,4 +254,3 @@ In alphabetical order:
 1. Sum Hung Yee
 1. Tan Hui Xuan Valerie
 1. Wilson Widyadhana
-
