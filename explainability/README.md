@@ -8,6 +8,7 @@ Explainability is crucial for understanding and trusting AI models, especially i
 
 ### This Directory Contains:
 1. **Real and Fake Test Images**: A set of images used to test the model's predictions.
-2. **Grad-CAM Visualization Script**: A script to generate **Grad-CAM heatmaps** for our ResNet model, revealing which image regions impact the model's decision.
+2. **Grad-CAM Visualization Script**: A script to generate **Grad-CAM heatmaps** for our simpler ResNet
+and CNN models, revealing which image regions impact the models' decision.
 
-These resources help improve model transparency and interpretability.
+These resources help improve model interpretability..
