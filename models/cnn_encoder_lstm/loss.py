@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df = pd.read_csv("models/cnn_encoder_lstm/results/cnn_encoder_lstm_loss.csv")
+df = pd.read_csv("models/cnn_encoder_lstm/results/progress.csv")
 df = df.rename(
     columns={
         "iterations_since_restore": "Epoch",
@@ -20,5 +20,5 @@ plt.ylabel("Loss")
 plt.title("CNN-Encoder-LSTM Training and Validation Loss Over Time")
 plt.legend()
 plt.grid(True)
-plt.savefig("models/cnn_encoder_lstm/cnn_encoder_lstm_loss.png", format="png")
+plt.savefig("models/cnn_encoder_lstm/diagrams/cnn_encoder_lstm_loss.png", format="png")
 plt.show()
